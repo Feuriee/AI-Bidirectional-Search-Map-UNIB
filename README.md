@@ -3,7 +3,7 @@
 
 ---
 
-### 👥 Anggota Kelompok
+### 👥 Anggota Kelompok 6
 | Nama | GitHub |
 |------|--------|
 | [Agyl Wendi Pratama] | (https://github.com/likeazwee) |
