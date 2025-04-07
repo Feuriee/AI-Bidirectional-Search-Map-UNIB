@@ -1,69 +1,7 @@
-import time
-import tracemalloc
+import time, tracemalloc
 from collections import deque
 
-def bidirectional_search(graph, start, goal):
-    if start == goal:
-        return [start]
-    
-    forward_queue = deque([start])
-    backward_queue = deque([goal])
-    
-    forward_visited = {start: None}
-    backward_visited = {goal: None}
-    
-    while forward_queue and backward_queue:
-        # Expand dari sisi awal
-        if forward_queue:
-            node = forward_queue.popleft()
-            for neighbor in graph.get(node, []):
-                if neighbor not in forward_visited:
-                    forward_visited[neighbor] = node
-                    forward_queue.append(neighbor)
-                    if neighbor in backward_visited:
-                        return construct_path(forward_visited, backward_visited, neighbor)
-        
-        # Expand dari sisi tujuan
-        if backward_queue:
-            node = backward_queue.popleft()
-            for neighbor in graph.get(node, []):
-                if neighbor not in backward_visited:
-                    backward_visited[neighbor] = node
-                    backward_queue.append(neighbor)
-                    if neighbor in forward_visited:
-                        return construct_path(forward_visited, backward_visited, neighbor)
-    
-    return None
-
-def construct_path(forward_visited, backward_visited, meeting_point):
-    path = []
-    # Dari awal ke titik temu
-    node = meeting_point
-    while node is not None:
-        path.append(node)
-        node = forward_visited.get(node)
-    path.reverse()
-    
-    # Dari titik temu ke tujuan
-    node = backward_visited.get(meeting_point)
-    while node is not None:
-        path.append(node)
-        node = backward_visited.get(node)
-    
-    return path
-
-def bfs(graph, start, goal):
-    queue = deque([start])
-    visited = set()
-    while queue:
-        node = queue.popleft()
-        if node == goal:
-            return True
-        if node not in visited:
-            visited.add(node)
-            queue.extend(graph.get(node, []))
-    return False
-
+# Graph dengan jarak antar lokasi (dalam meter)
 graph = {
     'Masjid Darul Ulum': {'Fakultas Hukum': 100, 'Gerbang Masuk 1': 80, 'Gerbang Keluar 1': 120},
     'Fakultas Hukum': {'GOR UNIB': 150, 'Gedung 1': 200, 'Magister Akuntansi': 170, 'Masjid Darul Ulum': 100, 'Gerbang Keluar 1': 110, 'Gerbang Masuk 1': 90},
@@ -107,9 +45,44 @@ graph = {
     'Gerbang Keluar 3': {'Masjid Baitul Hikmah': 80, 'Fakultas Teknik': 90}
 }
 
-# --------------------
-# INPUT DARI USER
-# --------------------
+
+def bidirectional_search(graph, start, goal):
+    if start == goal: return [start], 0
+    f_queue, b_queue = deque([start]), deque([goal])
+    f_visited, b_visited = {start: None}, {goal: None}
+    while f_queue and b_queue:
+        def expand(queue, visited, other_visited):
+            node = queue.popleft()
+            for neighbor in graph.get(node, {}):
+                if neighbor not in visited:
+                    visited[neighbor] = node
+                    queue.append(neighbor)
+                    if neighbor in other_visited:
+                        return neighbor
+            return None
+        m_point = expand(f_queue, f_visited, b_visited)
+        if m_point: return construct_path(graph, f_visited, b_visited, m_point)
+        m_point = expand(b_queue, b_visited, f_visited)
+        if m_point: return construct_path(graph, f_visited, b_visited, m_point)
+    return None, 0
+
+def construct_path(graph, f_visited, b_visited, meet):
+    path, node, total_dist = [], meet, 0
+    while node: path.append(node); prev = f_visited[node]; total_dist += graph.get(prev, {}).get(node, 0) if prev else 0; node = prev
+    path.reverse(); node = b_visited[meet]
+    while node: path.append(node); prev = b_visited[node]; total_dist += graph[node][prev] if prev else 0; node = prev
+    return path, total_dist
+
+def bfs(graph, start, goal):
+    queue, visited = deque([start]), set()
+    while queue:
+        node = queue.popleft()
+        if node == goal: return True
+        if node not in visited:
+            visited.add(node)
+            queue.extend(graph.get(node, {}).keys())
+    return False
+
 print("=== Penelusuran Rute Kampus UNIB ===")
 print("Daftar lokasi:")
 for i, key in enumerate(graph.keys(), 1):
@@ -118,33 +91,27 @@ for i, key in enumerate(graph.keys(), 1):
 start = input("\nMasukkan titik awal: ")
 goal = input("Masukkan tujuan akhir: ")
 
-# --------------------
-# EKSEKUSI DENGAN PENGUKURAN WAKTU DAN MEMORI
-# --------------------
 if start not in graph or goal not in graph:
     print("Lokasi tidak valid. Pastikan penulisan sesuai daftar.")
 else:
-    tracemalloc.start()  # Mulai pemantauan memori
-    start_time = time.time()  # Mulai pengukuran waktu
-
+    tracemalloc.start()
+    t0 = time.time()
     if bfs(graph, start, goal):
-        print(f"\n✅ Ada jalur yang menghubungkan {start} dan {goal}")
-        shortest_path = bidirectional_search(graph, start, goal)
+        print(f"\n✅ Ada jalur dari {start} ke {goal}")
+        path, dist = bidirectional_search(graph, start, goal)
         print("🛣  Rute Terpendek:")
-        print(" -> ".join(shortest_path))
+        print(" -> ".join(path))
+        speed = 1.4  # m/s
+        waktu = dist / speed
+        menit, detik = divmod(int(waktu), 60)
+        print(f"📏 Total Jarak: {dist} meter")
+        print(f"⏱️ Estimasi waktu tempuh: {menit} menit {detik} detik")
     else:
-        print(f"\n❌ TIDAK ADA jalur yang menghubungkan {start} dan {goal}")
-
-    end_time = time.time()  # Selesai pengukuran waktu
-    current_memory, peak_memory = tracemalloc.get_traced_memory()  # Ambil data memori
-    tracemalloc.stop()  # Hentikan pemantauan memori
-
-    execution_time = end_time - start_time  # Hitung waktu eksekusi dalam detik
-
-    # --------------------
-    # ANALISIS WAKTU DAN RUANG
-    # --------------------
+        print(f"\n❌ TIDAK ADA jalur dari {start} ke {goal}")
+    t1 = time.time()
+    mem_now, mem_peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
     print("\n=== ANALISIS ALGORITMA ===")
     print("Algoritma       : Bidirectional Search")
-    print(f"Time Complexity : {execution_time:.6f} detik")
-    print(f"Space Complexity: {peak_memory / 1024:.2f} KB (memori puncak yang digunakan)")
+    print(f"Time Complexity : {t1 - t0:.6f} detik")
+    print(f"Space Complexity: {mem_peak / 1024:.2f} KB (memori puncak)")
