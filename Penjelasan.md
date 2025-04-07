@@ -70,7 +70,7 @@ else:
     print(f"\n❌ TIDAK ADA jalur yang menghubungkan {start} dan {goal}")
 ```
 
-7. Algoritma Bidirectional Search
+### 7. Algoritma Bidirectional Search
 
 📄 Kode Inti:
 ```python
