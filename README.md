@@ -40,7 +40,7 @@
                      Berarti jalur ditemukan!
                b. Lakukan hal serupa dari sisi tujuan
            - Jika ditemukan titik pertemuan:
-               Bangun rute terpendek dari titik awal ke tujuan
+               Bangun rute terpendek dari titik awal ke tujuannya
 
          Tampilkan rute terpendek hasil pencarian
 
