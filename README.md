@@ -39,11 +39,11 @@ Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Uni
 
 ### 🔍 Halaman Pencarian Rute
 
-![GUI Main Window](screenshots/gui_main.png)
+![GUI Main Window](Image Sample/Main window.png)
 
 ### 📊 Hasil Analisis Algoritma
 
-![GUI Analysis](screenshots/gui_analysis.png)
+![GUI Analysis](Image Sample/Analis window.png)
 
 > 📌 *Silakan masukkan screenshot pada folder `/screenshots/` dan ganti nama file sesuai.*
 
