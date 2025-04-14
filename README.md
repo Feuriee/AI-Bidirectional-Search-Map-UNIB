@@ -39,11 +39,11 @@ Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Uni
 
 ### 🔍 Halaman Pencarian Rute
 
-![GUI Main Window]((https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Main%20window.png))
+![GUI Main Window](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Main%20window.png?raw=true)
 
 ### 📊 Hasil Analisis Algoritma
 
-![GUI Analysis]((https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Analis%20window.png))
+![GUI Analysis](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Analis%20window.png?raw=true)
 
 ---
 
@@ -73,24 +73,3 @@ python main.py
 - Visualisasi jalur kampus
 - Analisis performa algoritma: waktu, memori, kompleksitas
 - Antarmuka GUI berbasis Tkinter
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
