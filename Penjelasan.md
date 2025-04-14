@@ -105,3 +105,38 @@ if __name__ == "__main__":
     app = UnibRouteFinderApp(root)
     root.mainloop()
 ```
+
+# Perhitungan Algoritma bidirectional
+**Algoritma Bidirectional Search (BDS) bekerja dengan melakukan pencarian dua arah secara simultan: dari titik awal (start) dan titik tujuan (goal). Proses dihentikan saat pencarian dari dua arah bertemu di satu titik (disebut meet_point). Berikut adalah proses perhitungan yang dilakukan:**
+
+## 📌 Langkah-Langkah:
+1. Inisialisasi dua antrian (queue) untuk pencarian maju dan mundur.
+2. Lakukan pencarian dari kedua arah secara bergantian.
+3. Periksa pertemuan antara dua pencarian (jika simpul ditemukan di kedua arah).
+4. Rekonstruksi rute dari start → meet_point → goal.
+5. Hitung total jarak dengan menjumlahkan bobot antar simpul dalam rute.
+6. Hitung estimasi waktu berdasarkan moda transportasi yang dipilih.
+7. Analisis performa algoritma:
+   - Waktu komputasi (execution time)
+   - Penggunaan memori (memory usage)
+
+## Perbandingan Hasil Percobaan
+**Perbandingan antara jarak dan time complexity**
+| Jarak (Meter) | Time Complexity (Detik) |
+|---------------|-------------------------|
+| 0             | 0.001001                |
+| 100           | 0.002012                |
+| 200           | 0.002120                |
+| 300           | 0.002502                |
+| 400           | 0.002112                |
+| 500           | 0.002612                |
+
+**Perbandingan antara jumlah node dan time complexity**
+| Nodes         | Time Complexity (Detik) |
+|---------------|-------------------------|
+| 0             | 0.001001                |
+| 1             | 0.001333                |
+| 2             | 0.001502                |
+| 3             | 0.002112                |
+| 4             | 0.002612                |
+| 5             | 0.003012                |
