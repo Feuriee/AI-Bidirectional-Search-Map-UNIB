@@ -17,62 +17,21 @@ print("Daftar Lokasi:")
 for lokasi in graph.keys():
     print("-", lokasi)
 ```
-### 2. INPUT titik_awal dari pengguna
 
-### 3. INPUT tujuan_akhir dari pengguna
-
-📄 Kode:
+## 2. Pilihan moda Transportasi 
 ```python
-start = input("Masukkan titik awal: ")
-goal = input("Masukkan tujuan akhir: ")
-```
-### 4. JIKA titik_awal atau tujuan_akhir tidak ada dalam graf:
-
-TAMPILKAN pesan error "Lokasi tidak valid"
-
-📄 Kode:
-```python
-if start not in graph or goal not in graph:
-    print("Lokasi tidak valid. Pastikan penulisan sesuai daftar.")
+    'Jalan Kaki': 1.4,
+    'Sepeda': 5.0,
+    'Sepeda Motor': 8.3
 ```
 
-### 5. JALANKAN pengukuran waktu dan penggunaan memori
-📄 Kode:
+## 3. Modifikasi Waktu dan Kondisi
 ```python
-tracemalloc.start()
-start_time = time.time()
+def get_modified_graph(day_type, time_hour):
+    modified_graph = {key: value.copy() for key, value in graph.items()}
 ```
 
-### 6. CEK apakah ada jalur dari titik_awal ke tujuan_akhir dengan BFS:
-
-JIKA TIDAK ADA:
-
-TAMPILKAN "Tidak ada jalur"
-
-JIKA ADA:
-
-JALANKAN algoritma Bidirectional Search
-
-📄 Kode:
-4. JIKA titik_awal atau tujuan_akhir tidak ada dalam graf:
-
-TAMPILKAN pesan error "Lokasi tidak valid"
-
-📄 Kode:
-
-```python
-if bfs(graph, start, goal):
-    print(f"\n✅ Ada jalur yang menghubungkan {start} dan {goal}")
-    shortest_path = bidirectional_search(graph, start, goal)
-    print("🛣  Rute Terpendek:")
-    print(" -> ".join(shortest_path))
-else:
-    print(f"\n❌ TIDAK ADA jalur yang menghubungkan {start} dan {goal}")
-```
-
-### 7. Algoritma Bidirectional Search
-
-📄 Kode Inti:
+## 4. Algoritma Bidirectional Search (BDS)
 ```python
 def bidirectional_search(graph, start, goal):
     if start == goal: return [start], 0
@@ -90,21 +49,59 @@ def bidirectional_search(graph, start, goal):
             return None
 ```
 
-### 8. SELESAIKAN pengukuran waktu dan memori
-
-### 9. HITUNG waktu eksekusi
-### 10. TAMPILKAN hasil analisis
-
-📄 Kode:
+## 5. Menjalankan Algoritma Analisis
 ```python
-end_time = time.time()
-current_memory, peak_memory = tracemalloc.get_traced_memory()
-tracemalloc.stop()
+def run_algorithm_analysis(graph, start, goal):
+    results = {}
+    
+    # Check if path exists
+    tracemalloc.start()
+    start_time = time.time()
+```
 
-execution_time = end_time - start_time
+## 6. GUI dengan Tkinter
+```python
+class UnibRouteFinderApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Pencari Rute Kampus UNIB")
+        self.root.geometry("800x620")
+        self.root.configure(bg="#f0f0f0")
+        
+        self.setup_ui()
+```
 
-print("\n=== ANALISIS ALGORITMA ===")
-print("Algoritma       : Bidirectional Search")
-print(f"Time Complexity : {execution_time:.6f} detik")
-print(f"Space Complexity: {peak_memory / 1024:.2f} KB")
+## 7. Input User
+```python
+        # Frame untuk input
+        input_frame = ttk.LabelFrame(main_frame, text="Parameter Input", padding="10")
+        
+        # Lokasi awal
+        ttk.Label(input_frame, text="Lokasi Awal:").grid(row=0, column=0, sticky="w", pady=5)
+```
+
+## 8. Mencari Lokasi atau rute secara bidirectional
+```python
+    def find_route(self):
+        start_location = self.start_var.get()
+        goal_location = self.goal_var.get()
+        transport_mode = self.transport_var.get()
+        day_type = self.day_var.get()
+        time_hour = int(self.hour_var.get())
+```
+
+## 9. Hitung analisis algoritma
+```python
+    def show_analysis(self):
+        if not self.analysis_results:
+            messagebox.showinfo("Analisis", "Silakan cari rute terlebih dahulu sebelum melihat analisis.")
+            return
+```
+
+## 10. Menjalankan fungsi Main dan default
+```python
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = UnibRouteFinderApp(root)
+    root.mainloop()
 ```
