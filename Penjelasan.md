@@ -120,6 +120,21 @@ if __name__ == "__main__":
    - Waktu komputasi (execution time)
    - Penggunaan memori (memory usage)
 
+## Metode Hitung
+1. Total jarak antar nodes
+    - Total Jarak (b) = Σ jarak antara dua simpul bertetangga di rute
+2. Hitung total jarak antar tempat
+   - Waktu Tempuh (v) (jam) = Total Jarak (km) / Kecepatan (km/h)
+   - Waktu Tempuh (v) (menit) = Waktu Tempuh (jam) × 60
+3. Waktu eksekusi
+   - Execution Time (d) = waktu_akhir - waktu_mulai
+4. Penggunaan Memori
+   - Memory Usage (memo) = peak memory (bytes) / 1024 (untuk konversi ke KB)
+5. Time complexity
+   - Bidirectional Search: O(b^(d/2))
+- Karena dua pencarian dilakukan hingga d/2, maka total kompleksitasnya adalah:
+   - O(b^(d/2)) + O(b^(d/2)) = O(2 * b^(d/2)) = O(b^(d/2))
+
 ## Perbandingan Hasil Percobaan
 **Perbandingan antara jarak dan time complexity**
 | Jarak (Meter) | Time Complexity (Detik) |
