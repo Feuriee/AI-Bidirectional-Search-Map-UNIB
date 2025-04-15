@@ -107,12 +107,12 @@ def bidirectional_search(graph, start, goal):
                         return neighbor
             return None
         
-        # Coba ekspansi dari depan
+        # Ekspansi dari depan
         meeting_point = expand(f_queue, f_visited, b_visited)
         if meeting_point:
             return construct_path(graph, f_visited, b_visited, meeting_point)
         
-        # Coba ekspansi dari belakang
+        # Ekspansi dari belakang
         meeting_point = expand(b_queue, b_visited, f_visited)
         if meeting_point:
             return construct_path(graph, f_visited, b_visited, meeting_point)
@@ -170,11 +170,11 @@ def calculate_complexity_metrics(graph):
 def run_algorithm_analysis(graph, start, goal):
     results = {}
     
-    # Check if path exists
+    # Check path eksis
     tracemalloc.start()
     start_time = time.time()
     
-    # Check if there's a path before running the algorithm
+    # Cek apakah ada algoritma yang berjalan
     connected = bfs(graph, start, goal)
     if not connected:
         tracemalloc.stop()
@@ -192,13 +192,13 @@ def run_algorithm_analysis(graph, start, goal):
     results['time'] = end_time - start_time
     results['memory'] = peak / 1024  # KB
     
-    # Calculate complexity metrics
+    # Kalkulasi complexity metrics
     metrics = calculate_complexity_metrics(graph)
     results['node_count'] = metrics['node_count']
     results['edge_count'] = metrics['edge_count']
     results['branching_factor'] = metrics['branching_factor']
     
-    # Path length
+    # Panjang path
     results['path_length'] = len(path) if path else 0
     
     return results
