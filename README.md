@@ -52,7 +52,7 @@ Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Uni
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/NamaRepo/UNIB-RouteFinder.git
+git clone https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB.git
 cd UNIB-RouteFinder
 ```
 
