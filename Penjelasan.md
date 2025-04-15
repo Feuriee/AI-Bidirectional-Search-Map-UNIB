@@ -155,3 +155,36 @@ if __name__ == "__main__":
 | 3             | 0.002112                |
 | 4             | 0.002612                |
 | 5             | 0.003012                |
+
+**Perbandingan antara Jarak dan alokasi memori**
+| Jarak (Meter) | Alokasi Memori (KB)     |
+|---------------|-------------------------|
+| 0             | 0.95                    |
+| 100           | 2.22                    |
+| 200           | 2.22                    |
+| 300           | 2.45                    |
+| 400           | 2.48                    |
+| 500           | 2.69                    |
+
+**Perbandingan antara nodes dan alokasi memori**
+
+| Nodes         | Alokasi Memori (KB)     |
+|---------------|-------------------------|
+| 0             | 0.95                    |
+| 1             | 2.22                    |
+| 2             | 2.22                    |
+| 3             | 2.32                    |
+| 4             | 2.45                    |
+| 5             | 2.69                    |
+
+
+### Kesimpulan
+***Berdasarkan hasil percobaan yang dilakukan terhadap algoritma pencarian rute Bidirectional Search, diperoleh beberapa kesimpulan sebagai berikut:***
+1. Pengaruh Jarak terhadap Kompleksitas Waktu
+    - Terdapat peningkatan time complexity seiring bertambahnya jarak yang ditempuh. Meskipun fluktuatif, tren umumnya menunjukkan bahwa semakin jauh jarak tempuh, maka waktu eksekusi algoritma juga cenderung meningkat. Hal         ini disebabkan oleh bertambahnya ruang pencarian yang harus dieksplorasi oleh algoritma.
+2. Pengaruh Jumlah Node terhadap Kompleksitas Waktu
+    - Jumlah simpul (nodes) yang dilalui berbanding lurus dengan time complexity. Saat jumlah node meningkat, waktu komputasi juga meningkat secara bertahap.
+3. Pengaruh Jarak terhadap Alokasi Memori
+   - Alokasi memori juga meningkat seiring bertambahnya jarak. Hal ini dapat terjadi karena pencarian jarak yang lebih jauh membutuhkan lebih banyak struktur data.
+4. Pengaruh Jumlah Node terhadap Alokasi Memori
+   - Sama seperti pada kompleksitas waktu, jumlah node juga mempengaruhi alokasi memori. Penambahan jumlah node menyebabkan kebutuhan memori bertambah secara bertahap, meskipun pada beberapa titik terlihat adanya plateau         yang menandakan bahwa penggunaan memori tidak selalu naik secara linier.
