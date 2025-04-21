@@ -1,617 +1,210 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-import time
-import tracemalloc
-from collections import deque
-import datetime
+from tkinter import ttk
+from tkinter import messagebox
 import folium
 import webbrowser
 import os
+import time
+import math
+import networkx as nx
+import openrouteservice
+from itertools import combinations
 
-# Graph dengan jarak antar lokasi (dalam meter)
-graph = {
-    'Masjid Darul Ulum': {'Fakultas Hukum': 100, 'Gerbang Masuk 1': 80, 'Gerbang Keluar 1': 120},
-    'Fakultas Hukum': {'GOR UNIB': 150, 'Gedung 1': 200, 'Magister Akuntansi': 170, 'Masjid Darul Ulum': 100, 'Gerbang Keluar 1': 110, 'Gerbang Masuk 1': 90},
-    'Magister Akuntansi': {'Fakultas Ekonomi dan Bisnis': 160, 'Gedung 1': 140, 'Fakultas Hukum': 170},
-    'Fakultas Ekonomi dan Bisnis': {'Magister Akuntansi': 160, 'GOR UNIB': 180},
-    'Gedung 1': {'Fakultas Hukum': 200, 'Magister Akuntansi': 140, 'Lab. Pertanian': 180, 'Gedung R UPT Bahasa': 130},
-    'GOR UNIB': {'Fakultas Hukum': 150, 'Fakultas Ekonomi dan Bisnis': 180},
-    'Lab. Pertanian': {'Gedung 1': 180, 'Fakultas Pertanian': 120, 'GLT': 150, 'Rektorat': 200},
-    'Gedung R UPT Bahasa': {'Gedung 1': 130, 'Klinik Pratama UNIB': 100},
-    'Fakultas Pertanian': {'Lab. Pertanian': 120},
-    'Klinik Pratama UNIB': {'Gedung R UPT Bahasa': 100, 'Rektorat': 150},
-    'Rektorat': {'Lab. Pertanian': 200, 'Klinik Pratama UNIB': 150, 'GLT': 100, 'Fakultas Ilmu Sosial dan Ilmu Politik': 120, 'Gerbang Masuk 2': 100},
-    'Fakultas Ilmu Sosial dan Ilmu Politik': {'GB2': 100, 'Rektorat': 120, 'Gerbang Masuk 3': 90},
-    'GLT': {'Lab. Pertanian': 150, 'Rektorat': 100, 'Lab. Kehutanan dan Ilmu Lingkungan': 140, 'Lab. Bio, Fisika dan Kimia': 180},
-    'Lab. Kehutanan dan Ilmu Lingkungan': {'GLT': 140, 'Danau UNIB': 130, 'Lab. Bio, Fisika dan Kimia': 110},
-    'Danau UNIB': {'Lab. Kehutanan dan Ilmu Lingkungan': 130, 'GB2': 110},
-    'Lab. Bio, Fisika dan Kimia': {'GLT': 180, 'Lab. Kehutanan dan Ilmu Lingkungan': 110, 'GB1': 100, 'Fakultas Matematika dan Ilmu Pengetahuan Alam': 160},
-    'GB1': {'Lab. Bio, Fisika dan Kimia': 100, 'GB2': 80, 'Perpus UNIB': 90, 'Fakultas Keguruan dan Ilmu Pendidikan': 110, 'LPTIK': 150, 'Gerbang Keluar 2': 120},
-    'GB2': {'Danau UNIB': 110, 'GB1': 80, 'Perpus UNIB': 90, 'Fakultas Keguruan dan Imu Pendidikan': 100, 'LPTIK': 150, 'Gerbang Keluar 2': 120, 'Fakultas Ilmu Sosial dan Ilmu Politik': 100},
-    'Perpus UNIB': {'GB1': 90, 'GB2': 90, 'Fakultas Keguruan dan Ilmu Pendidikan': 80, 'LPTIK': 100, 'Gerbang Keluar 2': 110},
-    'Fakultas Keguruan dan Ilmu Pendidikan': {'Perpus UNIB': 80, 'GB1': 110, 'GB2': 100, 'LPTIK': 90, 'Gerbang Keluar 2': 100},
-    'LPTIK': {'Lab. FKIP': 130, 'GB1': 150, 'GB2': 150, 'Perpus UNIB': 100, 'Fakultas Keguruan dan Ilmu Pendidikan': 90},
-    'Lab. FKIP': {'Fakultas Teknik': 140, 'Gedung Serba Guna': 150, 'LPTIK': 130, 'Masjid Baitul Hikmah': 130},
-    'Fakultas Teknik': {'Gerbang Keluar 3': 90, 'Gedung Serba Guna': 100, 'Lab. FKIP': 140, 'Lab. Terpadu Teknik': 130, 'Masjid Baitul Hikmah': 100},
-    'Masjid Baitul Hikmah': {'Gerbang Keluar 3': 80, 'Fakultas Teknik': 100, 'Lab. FKIP': 130},
-    'Gedung Serba Guna': {'Fakultas Teknik': 100, 'Lab. Terpadu Teknik': 90, 'GB3 dan 4': 120, 'Magister FKIP': 130, 'Gedung PKM': 140, 'Lab. FKIP': 150},
-    'Lab. Terpadu Teknik': {'Gedung Serba Guna': 90, 'GB3 dan 4': 110, 'Magister FKIP': 100, 'Fakultas Teknik': 130},
-    'Magister FKIP': {'Lab. Terpadu Teknik': 100, 'Gedung Serba Guna': 130, 'Stadion UNIB': 200, 'GB5': 140, 'Fakultas Kedokteran': 120},
-    'Stadion UNIB': {'Magister FKIP': 200},
-    'GB3 dan 4': {'Gedung Serba Guna': 120, 'Lab. Terpadu Teknik': 110, 'Magister FKIP': 100, 'GB5': 90, 'Fakultas Kedokteran': 100, 'Gedung PKM': 80},
-    'Gedung PKM': {'GB3 dan 4': 80, 'Gedung Serba Guna': 140},
-    'GB5': {'Magister FKIP': 140, 'GB3 dan 4': 90, 'Fakultas Kedokteran': 100, 'Fakultas Matematika dan Ilmu Pengetahuan Alam': 160},
-    'Fakultas Kedokteran': {'GB5': 100, 'GB3 dan 4': 100, 'Magister FKIP': 120},
-    'Fakultas Matematika dan Ilmu Pengetahuan Alam': {'GB5': 160, 'Lab. Bio, Fisika dan Kimia': 160},
-    'Gerbang Masuk 1': {'Masjid Darul Ulum': 80, 'Fakultas Hukum': 90},
-    'Gerbang Masuk 2': {'Rektorat': 100},
-    'Gerbang Masuk 3': {'Fakultas Ilmu Sosial dan Ilmu Politik': 90},
-    'Gerbang Keluar 1': {'Fakultas Hukum': 110, 'Masjid Darul Ulum': 120},
-    'Gerbang Keluar 2': {'GB1': 120, 'GB2': 120, 'Perpus UNIB': 110, 'Fakultas Keguruan dan Ilmu Pendidikan': 100},
-    'Gerbang Keluar 3': {'Masjid Baitul Hikmah': 80, 'Fakultas Teknik': 90}
+# === Data Koordinat UNIB ===
+coordinates = {
+    "Rektorat": [-3.7590495172423495, 102.27231460986346],
+    'Masjid Darul Ulum': [-3.757594, 102.267707],
+    'Fakultas Hukum': [-3.760628, 102.268349],
+    'Magister Akuntansi': [-3.761804, 102.268806],
+    'Fakultas Ekonomi dan Bisnis': [-3.7617198090691164, 102.26862389169713],
+    'Gedung 1': [-3.760152, 102.270047],
+    'GOR UNIB': [-3.760763, 102.267672],
+    'Lab. Pertanian': [-3.7585179, 102.2689226],
+    'Gedung R UPT Bahasa': [-3.7607479, 102.2703659],
+    'Fakultas Pertanian': [-3.7595105, 102.2692443],
+    'Klinik Pratama UNIB': [-3.7612637, 102.2719374],
+    'Fakultas Ilmu Sosial dan Ilmu Politik': [-3.7591970, 102.2746466],
+    'GLT': [-3.7581473, 102.2720357],
+    'Lab. Kehutanan dan Ilmu Lingkungan': [-3.7579898, 102.2724654],
+    'Danau UNIB': [-3.75821649, 102.27301278],
+    'Lab. Bio, Fisika dan Kimia': [-3.75608452, 102.27357731],
+    'GB1': [-3.76002480, 102.26986519],
+    'GB2': [-3.7578575751002457, 102.274037554275],
+    'Perpus UNIB': [-3.75717114, 102.27483064],
+    'Fakultas Keguruan dan Ilmu Pendidikan': [-3.75740598, 102.27513947],
+    'LPTIK': [-3.75828163, 102.27496492],
+    'Lab. FKIP': [-3.75844345, 102.27574886],
+    'Fakultas Teknik': [-3.75846893, 102.27665736],
+    'Masjid Baitul Hikmah': [-3.75910765, 102.27609130],
+    'Gedung Serba Guna': [-3.7579609, 102.2765348],
+    'Lab. Terpadu Teknik': [-3.75858798, 102.27719504],
+    'Magister FKIP': [-3.7565071, 102.2774714],
+    'Stadion UNIB': [-3.7572898, 102.2781438],
+    'GB3 dan 4': [-3.7564116, 102.2766278],
+    'Gedung PKM': [-3.7565600, 102.2757768],
+    'GB5': [-3.7555961, 102.2764859],
+    'Fakultas Kedokteran': [-3.7551956, 102.2780187],
+    'Fakultas Matematika dan Ilmu Pengetahuan Alam': [-3.7559771, 102.27485175],
+    'Gerbang Masuk 1': [-3.759933, 102.267244],
+    'Gerbang Masuk 2': [-3.76065782, 102.272668575],
+    'Gerbang Masuk 3': [-3.75960389, 102.27510884],
+    'Gerbang Keluar 1': [-3.75868214, 102.26694025],
+    'Gerbang Keluar 2': [-3.75955438, 102.27518921],
+    'Gerbang Keluar 3': [-3.75938105, 102.27624033],
 }
 
-# Kecepatan moda transportasi dalam meter/detik
-transport_speeds = {
-    'Jalan Kaki': 1.4,
-    'Sepeda': 5.0,
-    'Sepeda Motor': 8.3
-}
+# === Graph Berdasarkan Jarak Euclidean < 200m ===
+def haversine(coord1, coord2):
+    R = 6371e3
+    lat1, lon1 = map(math.radians, coord1)
+    lat2, lon2 = map(math.radians, coord2)
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-def get_modified_graph(day_type, time_hour):
-    modified_graph = {key: value.copy() for key, value in graph.items()}
-    
-    # Malam hari (18:00 - 06:00)
-    if time_hour < 6 or time_hour >= 18:
-        # Hapus gerbang yang tutup dari graph
-        for node in list(modified_graph.keys()):
-            # Hapus koneksi ke gerbang-gerbang yang tutup
-            if node in ['Gerbang Masuk 1', 'Gerbang Keluar 1', 'Gerbang Masuk 2', 'Gerbang Keluar 3']:
-                # Hapus koneksi dari node lain ke gerbang tutup
-                for other_node in modified_graph:
-                    if node in modified_graph[other_node]:
-                        del modified_graph[other_node][node]
-    
-    # Hari kerja (Senin - Jumat)
-    if day_type == "Weekday":
-        # Ubah Gerbang Keluar 2 menjadi gerbang masuk
-        if 'Gerbang Keluar 2' in modified_graph:
-            # Tidak ada perubahan khusus selain nama, logika penggunaan tetap sama
-            pass
-    
-    # Weekend
-    elif day_type == "Weekend":
-        # Tutup Gerbang Keluar 3
-        if 'Gerbang Keluar 3' in modified_graph:
-            for node in modified_graph:
-                if 'Gerbang Keluar 3' in modified_graph[node]:
-                    del modified_graph[node]['Gerbang Keluar 3']
-    
-    return modified_graph
+G = nx.Graph()
+for a, b in combinations(coordinates, 2):
+    dist = haversine(coordinates[a], coordinates[b])
+    if dist < 200:
+        G.add_edge(a, b, weight=dist)
 
-def bidirectional_search(graph, start, goal):
-    if start == goal:
-        return [start], 0
-    
-    # Inisialisasi antrian dan kunjungan dari depan dan belakang
-    f_queue, b_queue = deque([start]), deque([goal])
-    f_visited, b_visited = {start: None}, {goal: None}
-    
-    while f_queue and b_queue:
-        # Fungsi untuk memperluas pencarian dari satu arah
-        def expand(queue, visited, other_visited):
-            node = queue.popleft()
-            for neighbor in graph.get(node, {}):
-                if neighbor not in visited:
-                    visited[neighbor] = node
-                    queue.append(neighbor)
-                    if neighbor in other_visited:
-                        return neighbor
-            return None
-        
-        # Ekspansi dari depan
-        meeting_point = expand(f_queue, f_visited, b_visited)
-        if meeting_point:
-            return construct_path(graph, f_visited, b_visited, meeting_point)
-        
-        # Ekspansi dari belakang
-        meeting_point = expand(b_queue, b_visited, f_visited)
-        if meeting_point:
-            return construct_path(graph, f_visited, b_visited, meeting_point)
-    
-    return None, 0
+# === Gerbang Rules ===
+def status_gerbang(jam, hari):
+    status = {g: "Tutup" for g in [
+        "Gerbang Masuk 1", "Gerbang Masuk 2", "Gerbang Masuk 3",
+        "Gerbang Keluar 1", "Gerbang Keluar 2", "Gerbang Keluar 3"]}
 
-def construct_path(graph, f_visited, b_visited, meet):
-    # Konstruksi jalur dari awal ke titik temu
-    path, node, total_dist = [], meet, 0
-    while node:
-        path.append(node)
-        prev = f_visited[node]
-        total_dist += graph.get(prev, {}).get(node, 0) if prev else 0
-        node = prev
-    
-    # Balik jalur karena kita merunutnya dari akhir ke awal
-    path.reverse()
-    
-    # Konstruksi jalur dari titik temu ke tujuan
-    node = b_visited[meet]
-    while node:
-        path.append(node)
-        prev = b_visited[node]
-        total_dist += graph[node][prev] if prev else 0
-        node = prev
-    
-    return path, total_dist
+    if 7 <= jam < 18:
+        for g in status:
+            status[g] = "Buka"
+    else:
+        status["Gerbang Masuk 3"] = "Buka"
+        status["Gerbang Keluar 2"] = "Buka"
 
-def bfs(graph, start, goal):
-    # Cek apakah ada jalur dari start ke goal
-    queue, visited = deque([start]), set()
-    while queue:
-        node = queue.popleft()
-        if node == goal:
-            return True
-        if node not in visited:
-            visited.add(node)
-            queue.extend(graph.get(node, {}).keys())
-    return False
+    if hari == "weekend":
+        status["Gerbang Keluar 3"] = "Tutup (Akhir Pekan)"
 
-def calculate_complexity_metrics(graph):
-    # Calculate graph metrics for complexity analysis
-    node_count = len(graph)
-    edge_count = sum(len(edges) for edges in graph.values())
-    
-    # Calculate average branching factor
-    branching_factor = edge_count / node_count if node_count > 0 else 0
-    
-    return {
-        'node_count': node_count,
-        'edge_count': edge_count,
-        'branching_factor': branching_factor
-    }
+    return status
 
-def run_algorithm_analysis(graph, start, goal):
-    results = {}
-    
-    # Check path eksis
-    tracemalloc.start()
+def filter_graph_by_time(graph, jam, hari):
+    gate_status = status_gerbang(jam, hari)
+    Gf = nx.Graph()
+    for u, v, d in graph.edges(data=True):
+        if ("Gerbang" in u and gate_status.get(u, "Buka") != "Buka") or ("Gerbang" in v and gate_status.get(v, "Buka") != "Buka"):
+            continue
+        Gf.add_edge(u, v, weight=d['weight'])
+    return Gf
+
+# === Algoritma ===
+client = openrouteservice.Client(key='5b3ce3597851110001cf62486e58c245d2f740bfa1bdd46cbab8ed58')
+
+def get_ors_route(coord1, coord2):
+    try:
+        res = client.directions(
+            coordinates=[coord1[::-1], coord2[::-1]],
+            profile='foot-walking', format='geojson')
+        geometry = res['features'][0]['geometry']['coordinates']
+        distance = res['features'][0]['properties']['segments'][0]['distance']
+        return [[lat, lon] for lon, lat in geometry], distance
+    except:
+        return None, None
+
+def find_route(start, goal, jam, hari):
+    Gf = filter_graph_by_time(G, jam, hari)
     start_time = time.time()
-    
-    # Cek apakah ada algoritma yang berjalan
-    connected = bfs(graph, start, goal)
-    if not connected:
-        tracemalloc.stop()
-        return None
-    
-    # Run bidirectional search
-    path, distance = bidirectional_search(graph, start, goal)
-    end_time = time.time()
-    current, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-    
-    # Store results
-    results['path'] = path
-    results['distance'] = distance
-    results['time'] = end_time - start_time
-    results['memory'] = peak / 1024  # KB
-    
-    # Kalkulasi complexity metrics
-    metrics = calculate_complexity_metrics(graph)
-    results['node_count'] = metrics['node_count']
-    results['edge_count'] = metrics['edge_count']
-    results['branching_factor'] = metrics['branching_factor']
-    
-    # Panjang path
-    results['path_length'] = len(path) if path else 0
-    
-    return results
+    ors_coords, ors_dist = get_ors_route(coordinates[start], coordinates[goal])
+    if ors_coords:
+        return "ORS", ors_coords, ors_dist, time.time() - start_time
 
-class UnibRouteFinderApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Pencari Rute Kampus UNIB")
-        self.root.geometry("800x620")
-        self.root.configure(bg="#f0f0f0")
-        
-        self.setup_ui()
-        
-    def setup_ui(self):
-        # Frame utama
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.pack(expand=True, fill="both")
-        
-        # Judul
-        title_label = ttk.Label(main_frame, text="Pencari Rute Kampus UNIB", font=("Helvetica", 16, "bold"))
-        title_label.grid(row=0, column=0, columnspan=3, pady=10, sticky="w")
-        
-        # Frame untuk input
-        input_frame = ttk.LabelFrame(main_frame, text="Parameter Input", padding="10")
-        input_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
-        
-        # Lokasi awal
-        ttk.Label(input_frame, text="Lokasi Awal:").grid(row=0, column=0, sticky="w", pady=5)
-        self.start_var = tk.StringVar()
-        self.start_combo = ttk.Combobox(input_frame, textvariable=self.start_var, width=30)
-        self.start_combo['values'] = list(graph.keys())
-        self.start_combo.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        
-        # Lokasi tujuan
-        ttk.Label(input_frame, text="Lokasi Tujuan:").grid(row=1, column=0, sticky="w", pady=5)
-        self.goal_var = tk.StringVar()
-        self.goal_combo = ttk.Combobox(input_frame, textvariable=self.goal_var, width=30)
-        self.goal_combo['values'] = list(graph.keys())
-        self.goal_combo.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        
-        # Pilihan transportasi
-        ttk.Label(input_frame, text="Moda Transportasi:").grid(row=2, column=0, sticky="w", pady=5)
-        self.transport_var = tk.StringVar(value="Jalan Kaki")
-        transport_frame = ttk.Frame(input_frame)
-        transport_frame.grid(row=2, column=1, sticky="w", pady=5)
-        
-        modes = list(transport_speeds.keys())
-        for i, mode in enumerate(modes):
-            ttk.Radiobutton(transport_frame, text=mode, variable=self.transport_var, value=mode).grid(row=0, column=i, padx=5)
-        
-        # Frame untuk waktu dan hari
-        time_frame = ttk.LabelFrame(main_frame, text="Pengaturan Waktu & Hari", padding="10")
-        time_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=5)
-        
-        # Pilihan hari
-        ttk.Label(time_frame, text="Hari:").grid(row=0, column=0, sticky="w", pady=5)
-        self.day_var = tk.StringVar(value="Weekend")
-        day_frame = ttk.Frame(time_frame)
-        day_frame.grid(row=0, column=1, sticky="w", pady=5)
-        
-        ttk.Radiobutton(day_frame, text="Hari Kerja (Sen-Jum)", variable=self.day_var, value="Weekday").grid(row=0, column=0, padx=5)
-        ttk.Radiobutton(day_frame, text="Akhir Pekan (Sab-Min)", variable=self.day_var, value="Weekend").grid(row=0, column=1, padx=5)
-        
-        # Pilihan waktu
-        ttk.Label(time_frame, text="Waktu:").grid(row=1, column=0, sticky="w", pady=5)
-        
-        time_input_frame = ttk.Frame(time_frame)
-        time_input_frame.grid(row=1, column=1, sticky="w", pady=5)
-        
-        self.hour_var = tk.StringVar(value="08")
-        self.minute_var = tk.StringVar(value="00")
-        
-        ttk.Label(time_input_frame, text="Jam:").grid(row=0, column=0, sticky="w")
-        hour_combo = ttk.Combobox(time_input_frame, textvariable=self.hour_var, width=5)
-        hour_combo['values'] = [f"{i:02d}" for i in range(24)]
-        hour_combo.grid(row=0, column=1, padx=5)
-        
-        ttk.Label(time_input_frame, text="Menit:").grid(row=0, column=2, sticky="w")
-        minute_combo = ttk.Combobox(time_input_frame, textvariable=self.minute_var, width=5)
-        minute_combo['values'] = [f"{i:02d}" for i in range(0, 60, 5)]
-        minute_combo.grid(row=0, column=3, padx=5)
-        
-        # Frame untuk tombol-tombol
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=3, column=0, columnspan=3, pady=10)
-        
-        # Tombol Lihat Map (baru)
-        self.map_button = ttk.Button(button_frame, text="Lihat Map", command=self.show_map, state="disabled")
-        self.map_button.grid(row=0, column=1, padx=10)
+    try:
+        path = nx.bidirectional_shortest_path(Gf, start, goal)
+        dist = sum(Gf[u][v]['weight'] for u, v in zip(path[:-1], path[1:]))
+        coords = [coordinates[p] for p in path]
+        return "BDS", coords, dist, time.time() - start_time
+    except:
+        return None, None, None, None
 
-        # Tombol Cari Rute
-        find_button = ttk.Button(button_frame, text="Cari Rute", command=self.find_route)
-        find_button.grid(row=0, column=0, padx=10)
-        
-        # Tombol Analisis
-        analyze_button = ttk.Button(button_frame, text="Tampilkan Analisis Algoritma", command=self.show_analysis)
-        analyze_button.grid(row=0, column=1, padx=10)
-        
-        # Tombol Reset
-        reset_button = ttk.Button(button_frame, text="Reset", command=self.reset)
-        reset_button.grid(row=0, column=2, padx=10)
-        
-        # Frame untuk output
-        self.output_frame = ttk.LabelFrame(main_frame, text="Hasil", padding="10")
-        self.output_frame.grid(row=4, column=0, columnspan=3, sticky="nsew", pady=5)
-        
-        # Text widget untuk output
-        self.output_text = tk.Text(self.output_frame, wrap="word", width=80, height=15)
-        self.output_text.grid(row=0, column=0, sticky="nsew")
-        
-        scrollbar = ttk.Scrollbar(self.output_frame, orient="vertical", command=self.output_text.yview)
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        self.output_text.configure(yscrollcommand=scrollbar.set)
-        
-        # Configure grid weights
-        main_frame.columnconfigure(0, weight=1)
-        self.output_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(4, weight=1)
-        self.output_frame.rowconfigure(0, weight=1)
-        
-        # Status bar
-        self.status_var = tk.StringVar(value="Ready")
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        
-        # Inisialisasi variabel untuk menyimpan hasil analisis
-        self.analysis_results = None
-        
-    def find_route(self):
-        start_location = self.start_var.get()
-        goal_location = self.goal_var.get()
-        transport_mode = self.transport_var.get()
-        day_type = self.day_var.get()
-        time_hour = int(self.hour_var.get())
-        
-        if not start_location or not goal_location:
-            messagebox.showerror("Error", "Silakan pilih lokasi awal dan tujuan")
-            return
-        
-        # Hapus output sebelumnya
-        self.output_text.delete(1.0, tk.END)
-        
-        # Perbarui status
-        self.status_var.set(f"Mencari rute dari {start_location} ke {goal_location}...")
-        self.root.update()
-        
-        # Dapatkan graph yang dimodifikasi berdasarkan waktu dan hari
-        current_graph = get_modified_graph(day_type, time_hour)
-        
-        # Cek apakah kedua lokasi ada di graph yang dimodifikasi
-        if start_location not in current_graph or goal_location not in current_graph:
-            self.output_text.insert(tk.END, "Satu atau kedua lokasi yang dipilih tidak dapat diakses pada waktu yang ditentukan.\n")
-            self.status_var.set("Pencarian rute gagal - lokasi tidak dapat diakses")
-            return
-        
-        # Cek apakah ada jalur
-        if not bfs(current_graph, start_location, goal_location):
-            self.output_text.insert(tk.END, f"❌ Tidak ditemukan rute dari {start_location} ke {goal_location} pada waktu yang ditentukan.\n")
-            self.status_var.set("Rute tidak ditemukan")
-            return
-        
-        # Temukan rute
-        path, distance = bidirectional_search(current_graph, start_location, goal_location)
-        
-        if path:
-            # Hitung waktu berdasarkan moda transportasi
-            speed = transport_speeds[transport_mode]
-            time_seconds = distance / speed
-            minutes, seconds = divmod(int(time_seconds), 60)
-            
-            # Tampilkan hasil
-            self.output_text.insert(tk.END, f"✅ Rute ditemukan dari {start_location} ke {goal_location}\n\n")
-            self.output_text.insert(tk.END, "🛣️ Rute:\n")
-            self.output_text.insert(tk.END, " -> ".join(path) + "\n\n")
-            self.output_text.insert(tk.END, f"📏 Total Jarak: {distance} meter\n")
-            self.output_text.insert(tk.END, f"🚶 Moda Transportasi: {transport_mode}\n")
-            self.output_text.insert(tk.END, f"⏱️ Estimasi Waktu: {minutes} menit {seconds} detik\n\n")
-            
-            # Informasi waktu dan hari
-            time_str = f"{self.hour_var.get()}:{self.minute_var.get()}"
-            self.output_text.insert(tk.END, f"⏰ Waktu: {time_str}\n")
-            self.output_text.insert(tk.END, f"📅 Hari: {day_type}\n\n")
-            
-            # Informasi status gerbang
-            self.output_text.insert(tk.END, "🚧 Status Gerbang:\n")
-            if time_hour < 6 or time_hour >= 18:
-                self.output_text.insert(tk.END, "- Gerbang Masuk 1: Tutup (18:00-06:00)\n")
-                self.output_text.insert(tk.END, "- Gerbang Keluar 1: Tutup (18:00-06:00)\n")
-                self.output_text.insert(tk.END, "- Gerbang Masuk 2: Tutup (18:00-06:00)\n")
-                self.output_text.insert(tk.END, "- Gerbang Keluar 3: Tutup (18:00-06:00)\n")
-                self.output_text.insert(tk.END, "- Gerbang Masuk 3: Buka\n")
-                self.output_text.insert(tk.END, "- Gerbang Keluar 2: Buka\n")
-            else:
-                self.output_text.insert(tk.END, "- Gerbang Masuk 1: Buka\n")
-                self.output_text.insert(tk.END, "- Gerbang Keluar 1: Buka\n")
-                self.output_text.insert(tk.END, "- Gerbang Masuk 2: Buka\n")
-                self.output_text.insert(tk.END, "- Gerbang Masuk 3: Buka\n")
-                
-                if day_type == "Hari Kerja":
-                    self.output_text.insert(tk.END, "- Gerbang Keluar 2: Digunakan sebagai pintu masuk (Hari Kerja)\n")
-                    self.output_text.insert(tk.END, "- Gerbang Keluar 3: Buka\n")
-                else:  # Akhir Pekan
-                    self.output_text.insert(tk.END, "- Gerbang Keluar 2: Buka\n")
-                    self.output_text.insert(tk.END, "- Gerbang Keluar 3: Tutup (Akhir Pekan)\n")
-            
-            # Jalankan analisis
-            self.analysis_results = run_algorithm_analysis(current_graph, start_location, goal_location)
+# === GUI ===
+root = tk.Tk()
+root.title("Navigasi Kampus UNIB")
+root.geometry("750x670")
+root.configure(bg="#ffffff")
 
-            self.show_map(start_location, goal_location, path)
-            
-            self.status_var.set("Rute berhasil ditemukan")
-        else:
-            self.output_text.insert(tk.END, f"❌ Tidak ditemukan rute dari {start_location} ke {goal_location}.\n")
-            self.status_var.set("Rute tidak ditemukan")
-    
-    
-    
-    def show_map(self, start, end, path):
-        import folium
-        import webbrowser
-        import os
-        import requests
-        
-        # Fix coordinates dictionary to ensure consistent [lat, lon] format
-        coordinates = {
-            "Rektorat": [-3.7590495172423495, 102.27231460986346],
-            'Masjid Darul Ulum': [-3.757594, 102.267707],
-            'Fakultas Hukum': [-3.760628, 102.268349],
-            'Magister Akuntansi': [-3.761804, 102.268806],
-            'Fakultas Ekonomi dan Bisnis': [-3.7617198090691164, 102.26862389169713],
-            'Gedung 1': [-3.7568032921655625, 102.27372095056845],
-            'GOR UNIB': [-3.760763, 102.267672],
-            'Lab. Pertanian': [-3.7585179, 102.2689226],
-            'Gedung R UPT Bahasa': [-3.7607479, 102.2703659],
-            'Fakultas Pertanian': [-3.7595105, 102.2692443],
-            'Klinik Pratama UNIB': [-3.7612637, 102.2719374],
-            'Fakultas Ilmu Sosial dan Ilmu Politik': [-3.7591970, 102.2746466],
-            'GLT': [-3.7581473, 102.2720357],
-            'Lab. Kehutanan dan Ilmu Lingkungan': [-3.7579898, 102.2724654],
-            'Danau UNIB': [-3.75821649, 102.27301278],
-            'Lab. Bio, Fisika dan Kimia': [-3.75608452, 102.27357731],
-            'GB1': [-3.76002480, 102.26986519],
-            'GB2': [-3.7578575751002457, 102.274037554275],
-            'Perpus UNIB': [-3.75717114, 102.27483064],
-            'Fakultas Keguruan dan Ilmu Pendidikan': [-3.75740598, 102.27513947],
-            'LPTIK': [-3.75828163, 102.27496492],
-            'Lab. FKIP': [-3.75844345, 102.27574886],
-            'Fakultas Teknik': [-3.75846893, 102.27665736],
-            'Masjid Baitul Hikmah': [-3.75910765, 102.27609130],
-            'Gedung Serba Guna': [-3.7579609, 102.2765348],
-            'Lab. Terpadu Teknik': [-3.75858798, 102.27719504],
-            'Magister FKIP': [-3.7565071, 102.2774714],
-            'Stadion UNIB': [-3.7572898, 102.2781438],
-            'GB3 dan 4': [-3.7564116, 102.2766278],
-            'Gedung PKM': [-3.7565600, 102.2757768],
-            'GB5': [-3.7555961, 102.2764859],
-            'Fakultas Kedokteran': [-3.7551956, 102.2780187],
-            'Fakultas Matematika dan Ilmu Pengetahuan Alam': [-3.7559771, 102.27485175],
-            'Gerbang Masuk 1': [-3.759933, 102.267244],
-            'Gerbang Masuk 2': [-3.76065782, 102.272668575],
-            'Gerbang Masuk 3': [-3.75960389, 102.27510884],
-            'Gerbang Keluar 1': [-3.75868214, 102.26694025],
-            'Gerbang Keluar 2': [-3.75955438, 102.27518921],
-            'Gerbang Keluar 3': [-3.75938105, 102.27624033],
-        }
-        
-        # Properly convert coordinates for routing services (lon, lat)
-        routing_coordinates = {}
-        for location, coords in coordinates.items():
-            # Convert [lat, lon] to [lon, lat] for OSRM API
-            routing_coordinates[location] = [coords[1], coords[0]]
-        
-        # Check if start and end coordinates exist
-        start_coords = coordinates.get(start)
-        end_coords = coordinates.get(end)
-        
-        if not start_coords or not end_coords:
-            messagebox.showerror("Error", "Koordinat tidak ditemukan untuk lokasi yang dipilih.")
-            return
-        
-        # Calculate center point for the map (using lat, lon format)
-        center_lat = (start_coords[0] + end_coords[0]) / 2
-        center_lon = (start_coords[1] + end_coords[1]) / 2
-        
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=16)
-        
-        # Add markers for start and end points (folium expects [lat, lon])
-        folium.Marker(
-            start_coords,  # Already in [lat, lon] format
-            tooltip=start, 
-            icon=folium.Icon(color='green')
-        ).add_to(m)
-        
-        folium.Marker(
-            end_coords,  # Already in [lat, lon] format
-            tooltip=end, 
-            icon=folium.Icon(color='red')
-        ).add_to(m)
-        
-        # Create route path
-        route_points = []
-        
-        for i in range(len(path) - 1):
-            start_point = routing_coordinates[path[i]]  # [lon, lat] for OSRM
-            end_point = routing_coordinates[path[i+1]]  # [lon, lat] for OSRM
-            
-            # Call OSRM routing API
-            url = f"http://router.project-osrm.org/route/v1/driving/{start_point[0]},{start_point[1]};{end_point[0]},{end_point[1]}?overview=full&geometries=geojson"
-            
-            try:
-                response = requests.get(url)
-                data = response.json()
-                
-                if data["code"] == "Ok":
-                    # Extract the coordinates of the route
-                    route_segment = data["routes"][0]["geometry"]["coordinates"]
-                    
-                    # Convert from [lon, lat] to [lat, lon] for folium
-                    route_segment = [[coord[1], coord[0]] for coord in route_segment]
-                    route_points.extend(route_segment)
-            except Exception as e:
-                print(f"Error fetching route data: {e}")
-                # Fall back to direct line if routing fails
-                route_points.append(coordinates[path[i]])  # Already in [lat, lon]
-                route_points.append(coordinates[path[i+1]])  # Already in [lat, lon]
-        
-        # Draw the route on the map
-        if route_points:
-            folium.PolyLine(
-                route_points,
-                color='blue',
-                weight=5,
-                opacity=0.8
-            ).add_to(m)
-        
-        # Save and open the map
-        map_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'map.html')
-        m.save(map_file)
-        webbrowser.open('file://' + os.path.realpath(map_file))
-    
+sorted_locations = sorted(coordinates.keys())
 
-    def show_analysis(self):
-        if not self.analysis_results:
-            messagebox.showinfo("Analisis", "Silakan cari rute terlebih dahulu sebelum melihat analisis.")
-            return
-        
-        # Buat jendela baru untuk analisis
-        analysis_window = tk.Toplevel(self.root)
-        analysis_window.title("Analisis Algoritma")
-        analysis_window.geometry("600x500")
-        
-        # Buat frame untuk konten analisis
-        analysis_frame = ttk.Frame(analysis_window, padding=10)
-        analysis_frame.pack(expand=True, fill='both')
-        
-        # Text widget untuk hasil
-        text_output = tk.Text(analysis_frame, wrap="word", width=70, height=25)
-        text_output.grid(row=0, column=0, sticky="nsew")
-        
-        scrollbar = ttk.Scrollbar(analysis_frame, orient="vertical", command=text_output.yview)
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        text_output.configure(yscrollcommand=scrollbar.set)
-        
-        # Format nilai kompleksitas
-        node_count = self.analysis_results['node_count']
-        edge_count = self.analysis_results['edge_count']
-        branching_factor = self.analysis_results['branching_factor']
-        path_length = self.analysis_results['path_length']
-        
-        # Display results
-        # Menampilkan hasil
-        text_output.insert(tk.END, "=== ANALISIS ALGORITMA ===\n\n")
-        text_output.insert(tk.END, "Algoritma: Pencarian Dua Arah (Bidirectional Search)\n\n")
+style = ttk.Style()
+style.configure("TLabel", font=("Segoe UI", 10))
+style.configure("TButton", font=("Segoe UI", 10))
+style.configure("TCombobox", font=("Segoe UI", 10))
+style.configure("TLabelframe.Label", font=("Segoe UI", 11, "bold"))
 
-        text_output.insert(tk.END, "Properti Graf:\n")
-        text_output.insert(tk.END, f"- Jumlah simpul (nodes): {node_count}\n")
-        text_output.insert(tk.END, f"- Jumlah sisi (edges): {edge_count}\n")
-        text_output.insert(tk.END, f"- Rata-rata faktor percabangan: {branching_factor:.2f}\n")
-        text_output.insert(tk.END, f"- Panjang jalur: {path_length} simpul\n\n")
+# === Judul Aplikasi ===
+title_label = tk.Label(root, text="Navigasi Kampus UNIB", font=("Segoe UI", 18, "bold"), bg="#ffffff", fg="#333333")
+title_label.pack(pady=15)
 
-        text_output.insert(tk.END, "Metode Pengukuran Performa:\n")
-        text_output.insert(tk.END, f"- Waktu eksekusi: {self.analysis_results['time']:.6f} detik\n")
-        text_output.insert(tk.END, f"- Penggunaan memori: {self.analysis_results['memory']:.2f} KB\n\n")
+# === Frame Parameter Input ===
+frame_input = ttk.LabelFrame(root, text="Parameter Input")
+frame_input.pack(fill="x", padx=20, pady=10)
 
-        # Configure grid weights
-        analysis_frame.columnconfigure(0, weight=1)
-        analysis_frame.rowconfigure(0, weight=1)
-        
-        # Add a close button
-        close_button = ttk.Button(analysis_frame, text="Tutup", command=analysis_window.destroy)
-        close_button.grid(row=1, column=0, pady=10)
-    
-    def reset(self):
-        # Reset all input fields
-        self.start_var.set("")
-        self.goal_var.set("")
-        self.transport_var.set("Jalan Kaki")
-        self.day_var.set("Weekend")
-        self.hour_var.set("08")
-        self.minute_var.set("00")
-        
-        # Clear output text
-        self.output_text.delete(1.0, tk.END)
-        
-        # Reset status
-        self.status_var.set("Ready")
-        
-        # Reset analysis results
-        self.analysis_results = None
+# Form baris-baris
+form_fields = [
+    ("Titik Awal:", tk.StringVar()),
+    ("Titik Tujuan:", tk.StringVar()),
+    ("Hari:", tk.StringVar(value="weekday")),
+    ("Jam (0-23):", tk.StringVar(value="10"))
+]
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = UnibRouteFinderApp(root)
-    root.mainloop()
+for i, (label_text, var) in enumerate(form_fields):
+    ttk.Label(frame_input, text=label_text).grid(row=i, column=0, padx=10, pady=8, sticky="w")
+    if label_text.startswith("Jam"):
+        tk.Entry(frame_input, textvariable=var, width=10).grid(row=i, column=1, padx=10, pady=5, sticky="w")
+    else:
+        options = ["weekday", "weekend"] if label_text.startswith("Hari") else sorted_locations
+        ttk.Combobox(frame_input, textvariable=var, values=options, state="readonly", width=40).grid(row=i, column=1, padx=10, pady=5, sticky="w")
+
+start_var, goal_var, day_var, time_var = [v for _, v in form_fields]
+
+# === Tombol Fungsi ===
+frame_button = tk.Frame(root, bg="#ffffff")
+frame_button.pack(pady=10)
+tk.Button(frame_button, text="Tampilkan Rute", font=("Segoe UI", 10, "bold"), width=25, command=lambda: show_route()).pack()
+
+# === Frame Output ===
+frame_output = ttk.LabelFrame(root, text="Hasil Pencarian Rute")
+frame_output.pack(fill="both", expand=True, padx=20, pady=10)
+
+output_text = tk.Text(frame_output, height=12, wrap="word", font=("Segoe UI", 10))
+output_text.pack(fill="both", expand=True, padx=10, pady=10)
+
+def show_route():
+    start, goal = start_var.get(), goal_var.get()
+    if not start or not goal or start == goal:
+        messagebox.showerror("Error", "Pilih titik awal dan tujuan yang berbeda.")
+        return
+    try:
+        jam = int(time_var.get())
+    except ValueError:
+        messagebox.showerror("Error", "Jam harus berupa angka.")
+        return
+    hari = day_var.get()
+    method, coords, dist, durasi = find_route(start, goal, jam, hari)
+    if coords is None:
+        messagebox.showinfo("Info", "Rute tidak ditemukan.")
+        return
+
+    m = folium.Map(location=coordinates[start], zoom_start=17)
+    folium.Marker(coordinates[start], tooltip=f"Start: {start}", icon=folium.Icon(color='green')).add_to(m)
+    folium.Marker(coordinates[goal], tooltip=f"Goal: {goal}", icon=folium.Icon(color='red')).add_to(m)
+    folium.PolyLine(coords, color='blue', weight=5, tooltip=f"{method} - {dist:.2f} m").add_to(m)
+    m.save("rute_kampus.html")
+    webbrowser.open("file://" + os.path.realpath("rute_kampus.html"))
+
+    est_time = (dist / 1.4) / 60
+    gate_stat = status_gerbang(jam, hari)
+    gate_info = "\n".join([f"- {k}: {v}" for k, v in gate_stat.items()])
+
+    output_text.delete("1.0", tk.END)
+    output_text.insert(tk.END, f"Metode: {method}\nJarak: {dist:.2f} meter\nEstimasi waktu: {est_time:.2f} menit\nWaktu eksekusi: {durasi:.4f} detik\n\nStatus Gerbang:\n{gate_info}")
+
+root.mainloop()

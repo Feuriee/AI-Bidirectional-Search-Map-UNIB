@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_9792c0cc42d7eb735e69540320861506 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_9792c0cc42d7eb735e69540320861506" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_9792c0cc42d7eb735e69540320861506 = L.map(
+                "map_9792c0cc42d7eb735e69540320861506",
+                {
+                    center: [-3.7590495172423495, 102.27231460986346],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 17,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_f02808777e12113893a61094b63b5882 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_f02808777e12113893a61094b63b5882.addTo(map_9792c0cc42d7eb735e69540320861506);
+        
+    
+            var marker_72b7f15cfca28cb04b20ca38db1f3f9b = L.marker(
+                [-3.7590495172423495, 102.27231460986346],
+                {
+}
+            ).addTo(map_9792c0cc42d7eb735e69540320861506);
+        
+    
+            var icon_0ff2750b29e4d91a95eb29133e8bd36b = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+            marker_72b7f15cfca28cb04b20ca38db1f3f9b.bindTooltip(
+                `<div>
+                     Start: Rektorat
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_72b7f15cfca28cb04b20ca38db1f3f9b.setIcon(icon_0ff2750b29e4d91a95eb29133e8bd36b);
+            
+    
+            var marker_d0ab6acec76cdd5b1a7faebec4313730 = L.marker(
+                [-3.75846893, 102.27665736],
+                {
+}
+            ).addTo(map_9792c0cc42d7eb735e69540320861506);
+        
+    
+            var icon_f76558f4a9c45e812d9326353b70e4b9 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+            marker_d0ab6acec76cdd5b1a7faebec4313730.bindTooltip(
+                `<div>
+                     Goal: Fakultas Teknik
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d0ab6acec76cdd5b1a7faebec4313730.setIcon(icon_f76558f4a9c45e812d9326353b70e4b9);
+            
+    
+            var poly_line_21fb1461cefe652075d9e8058a941ef6 = L.polyline(
+                [[-3.759026, 102.272304], [-3.759014, 102.272332], [-3.758992, 102.272346], [-3.758895, 102.272352], [-3.758901, 102.272323], [-3.758536, 102.272249], [-3.758305, 102.272814], [-3.758126, 102.273243], [-3.758105, 102.273236], [-3.758006, 102.273454], [-3.757702, 102.274036], [-3.757656, 102.274106], [-3.757612, 102.274158], [-3.757597, 102.27418], [-3.757724, 102.274245], [-3.757941, 102.27426], [-3.75812, 102.274312], [-3.758276, 102.274398], [-3.75852, 102.274646], [-3.75869, 102.274771], [-3.758657, 102.274848], [-3.758654, 102.274896], [-3.75869, 102.274963], [-3.758548, 102.275313], [-3.758486, 102.275508], [-3.758459, 102.27589], [-3.75843, 102.276042], [-3.758309, 102.276416], [-3.758251, 102.276527], [-3.758291, 102.276555], [-3.758282, 102.276646], [-3.75832, 102.276648], [-3.758386, 102.276651], [-3.758386, 102.276652]],
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_9792c0cc42d7eb735e69540320861506);
+        
+    
+            poly_line_21fb1461cefe652075d9e8058a941ef6.bindTooltip(
+                `<div>
+                     ORS - 677.60 m
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>
