@@ -4,6 +4,9 @@ import time
 import tracemalloc
 from collections import deque
 import datetime
+import folium
+import webbrowser
+import os
 
 # Graph dengan jarak antar lokasi (dalam meter)
 graph = {
@@ -15,8 +18,7 @@ graph = {
     'GOR UNIB': {'Fakultas Hukum': 150, 'Fakultas Ekonomi dan Bisnis': 180},
     'Lab. Pertanian': {'Gedung 1': 180, 'Fakultas Pertanian': 120, 'GLT': 150, 'Rektorat': 200},
     'Gedung R UPT Bahasa': {'Gedung 1': 130, 'Klinik Pratama UNIB': 100},
-    'Fakultas Pertanian': {'Lab. Pertanian': 120, 'Lab. Perikanan': 90},
-    'Lab. Perikanan': {'Fakultas Pertanian': 90},
+    'Fakultas Pertanian': {'Lab. Pertanian': 120},
     'Klinik Pratama UNIB': {'Gedung R UPT Bahasa': 100, 'Rektorat': 150},
     'Rektorat': {'Lab. Pertanian': 200, 'Klinik Pratama UNIB': 150, 'GLT': 100, 'Fakultas Ilmu Sosial dan Ilmu Politik': 120, 'Gerbang Masuk 2': 100},
     'Fakultas Ilmu Sosial dan Ilmu Politik': {'GB2': 100, 'Rektorat': 120, 'Gerbang Masuk 3': 90},
@@ -107,12 +109,12 @@ def bidirectional_search(graph, start, goal):
                         return neighbor
             return None
         
-        # Coba ekspansi dari depan
+        # Ekspansi dari depan
         meeting_point = expand(f_queue, f_visited, b_visited)
         if meeting_point:
             return construct_path(graph, f_visited, b_visited, meeting_point)
         
-        # Coba ekspansi dari belakang
+        # Ekspansi dari belakang
         meeting_point = expand(b_queue, b_visited, f_visited)
         if meeting_point:
             return construct_path(graph, f_visited, b_visited, meeting_point)
@@ -170,11 +172,11 @@ def calculate_complexity_metrics(graph):
 def run_algorithm_analysis(graph, start, goal):
     results = {}
     
-    # Check if path exists
+    # Check path eksis
     tracemalloc.start()
     start_time = time.time()
     
-    # Check if there's a path before running the algorithm
+    # Cek apakah ada algoritma yang berjalan
     connected = bfs(graph, start, goal)
     if not connected:
         tracemalloc.stop()
@@ -192,13 +194,13 @@ def run_algorithm_analysis(graph, start, goal):
     results['time'] = end_time - start_time
     results['memory'] = peak / 1024  # KB
     
-    # Calculate complexity metrics
+    # Kalkulasi complexity metrics
     metrics = calculate_complexity_metrics(graph)
     results['node_count'] = metrics['node_count']
     results['edge_count'] = metrics['edge_count']
     results['branching_factor'] = metrics['branching_factor']
     
-    # Path length
+    # Panjang path
     results['path_length'] = len(path) if path else 0
     
     return results
@@ -285,6 +287,10 @@ class UnibRouteFinderApp:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=3, column=0, columnspan=3, pady=10)
         
+        # Tombol Lihat Map (baru)
+        self.map_button = ttk.Button(button_frame, text="Lihat Map", command=self.show_map, state="disabled")
+        self.map_button.grid(row=0, column=1, padx=10)
+
         # Tombol Cari Rute
         find_button = ttk.Button(button_frame, text="Cari Rute", command=self.find_route)
         find_button.grid(row=0, column=0, padx=10)
@@ -402,12 +408,140 @@ class UnibRouteFinderApp:
             
             # Jalankan analisis
             self.analysis_results = run_algorithm_analysis(current_graph, start_location, goal_location)
+
+            self.show_map(start_location, goal_location, path)
             
             self.status_var.set("Rute berhasil ditemukan")
         else:
             self.output_text.insert(tk.END, f"❌ Tidak ditemukan rute dari {start_location} ke {goal_location}.\n")
             self.status_var.set("Rute tidak ditemukan")
     
+    
+    
+    def show_map(self, start, end, path):
+        import folium
+        import webbrowser
+        import os
+        import requests
+        
+        # Fix coordinates dictionary to ensure consistent [lat, lon] format
+        coordinates = {
+            "Rektorat": [-3.7590495172423495, 102.27231460986346],
+            'Masjid Darul Ulum': [-3.757594, 102.267707],
+            'Fakultas Hukum': [-3.760628, 102.268349],
+            'Magister Akuntansi': [-3.761804, 102.268806],
+            'Fakultas Ekonomi dan Bisnis': [-3.7617198090691164, 102.26862389169713],
+            'Gedung 1': [-3.7568032921655625, 102.27372095056845],
+            'GOR UNIB': [-3.760763, 102.267672],
+            'Lab. Pertanian': [-3.7585179, 102.2689226],
+            'Gedung R UPT Bahasa': [-3.7607479, 102.2703659],
+            'Fakultas Pertanian': [-3.7595105, 102.2692443],
+            'Klinik Pratama UNIB': [-3.7612637, 102.2719374],
+            'Fakultas Ilmu Sosial dan Ilmu Politik': [-3.7591970, 102.2746466],
+            'GLT': [-3.7581473, 102.2720357],
+            'Lab. Kehutanan dan Ilmu Lingkungan': [-3.7579898, 102.2724654],
+            'Danau UNIB': [-3.75821649, 102.27301278],
+            'Lab. Bio, Fisika dan Kimia': [-3.75608452, 102.27357731],
+            'GB1': [-3.76002480, 102.26986519],
+            'GB2': [-3.7578575751002457, 102.274037554275],
+            'Perpus UNIB': [-3.75717114, 102.27483064],
+            'Fakultas Keguruan dan Ilmu Pendidikan': [-3.75740598, 102.27513947],
+            'LPTIK': [-3.75828163, 102.27496492],
+            'Lab. FKIP': [-3.75844345, 102.27574886],
+            'Fakultas Teknik': [-3.75846893, 102.27665736],
+            'Masjid Baitul Hikmah': [-3.75910765, 102.27609130],
+            'Gedung Serba Guna': [-3.7579609, 102.2765348],
+            'Lab. Terpadu Teknik': [-3.75858798, 102.27719504],
+            'Magister FKIP': [-3.7565071, 102.2774714],
+            'Stadion UNIB': [-3.7572898, 102.2781438],
+            'GB3 dan 4': [-3.7564116, 102.2766278],
+            'Gedung PKM': [-3.7565600, 102.2757768],
+            'GB5': [-3.7555961, 102.2764859],
+            'Fakultas Kedokteran': [-3.7551956, 102.2780187],
+            'Fakultas Matematika dan Ilmu Pengetahuan Alam': [-3.7559771, 102.27485175],
+            'Gerbang Masuk 1': [-3.759933, 102.267244],
+            'Gerbang Masuk 2': [-3.76065782, 102.272668575],
+            'Gerbang Masuk 3': [-3.75960389, 102.27510884],
+            'Gerbang Keluar 1': [-3.75868214, 102.26694025],
+            'Gerbang Keluar 2': [-3.75955438, 102.27518921],
+            'Gerbang Keluar 3': [-3.75938105, 102.27624033],
+        }
+        
+        # Properly convert coordinates for routing services (lon, lat)
+        routing_coordinates = {}
+        for location, coords in coordinates.items():
+            # Convert [lat, lon] to [lon, lat] for OSRM API
+            routing_coordinates[location] = [coords[1], coords[0]]
+        
+        # Check if start and end coordinates exist
+        start_coords = coordinates.get(start)
+        end_coords = coordinates.get(end)
+        
+        if not start_coords or not end_coords:
+            messagebox.showerror("Error", "Koordinat tidak ditemukan untuk lokasi yang dipilih.")
+            return
+        
+        # Calculate center point for the map (using lat, lon format)
+        center_lat = (start_coords[0] + end_coords[0]) / 2
+        center_lon = (start_coords[1] + end_coords[1]) / 2
+        
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=16)
+        
+        # Add markers for start and end points (folium expects [lat, lon])
+        folium.Marker(
+            start_coords,  # Already in [lat, lon] format
+            tooltip=start, 
+            icon=folium.Icon(color='green')
+        ).add_to(m)
+        
+        folium.Marker(
+            end_coords,  # Already in [lat, lon] format
+            tooltip=end, 
+            icon=folium.Icon(color='red')
+        ).add_to(m)
+        
+        # Create route path
+        route_points = []
+        
+        for i in range(len(path) - 1):
+            start_point = routing_coordinates[path[i]]  # [lon, lat] for OSRM
+            end_point = routing_coordinates[path[i+1]]  # [lon, lat] for OSRM
+            
+            # Call OSRM routing API
+            url = f"http://router.project-osrm.org/route/v1/driving/{start_point[0]},{start_point[1]};{end_point[0]},{end_point[1]}?overview=full&geometries=geojson"
+            
+            try:
+                response = requests.get(url)
+                data = response.json()
+                
+                if data["code"] == "Ok":
+                    # Extract the coordinates of the route
+                    route_segment = data["routes"][0]["geometry"]["coordinates"]
+                    
+                    # Convert from [lon, lat] to [lat, lon] for folium
+                    route_segment = [[coord[1], coord[0]] for coord in route_segment]
+                    route_points.extend(route_segment)
+            except Exception as e:
+                print(f"Error fetching route data: {e}")
+                # Fall back to direct line if routing fails
+                route_points.append(coordinates[path[i]])  # Already in [lat, lon]
+                route_points.append(coordinates[path[i+1]])  # Already in [lat, lon]
+        
+        # Draw the route on the map
+        if route_points:
+            folium.PolyLine(
+                route_points,
+                color='blue',
+                weight=5,
+                opacity=0.8
+            ).add_to(m)
+        
+        # Save and open the map
+        map_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'map.html')
+        m.save(map_file)
+        webbrowser.open('file://' + os.path.realpath(map_file))
+    
+
     def show_analysis(self):
         if not self.analysis_results:
             messagebox.showinfo("Analisis", "Silakan cari rute terlebih dahulu sebelum melihat analisis.")
