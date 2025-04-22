@@ -1,7 +1,7 @@
 # Dokumentasi Kode Sistem Navigasi Kampus UNIB
 
 ## Ikhtisar
-Repositori ini berisi kode sumber untuk sistem navigasi kampus Universitas Bengkulu (UNIB). Sistem ini menggunakan algoritma Pencarian Dua Arah (Bidirectional Search/BDS) untuk menemukan rute optimal antara lokasi-lokasi kampus dan menawarkan berbagai mode transportasi.
+Repositori ini berisi kode untuk sistem navigasi kampus Universitas Bengkulu (UNIB). Sistem ini menggunakan algoritma Pencarian Dua Arah (Bidirectional Search/BDS) untuk menemukan rute optimal antara lokasi-lokasi kampus dan menawarkan berbagai mode transportasi.
 
 ## Daftar Isi
 - [Dependensi](#dependensi)
