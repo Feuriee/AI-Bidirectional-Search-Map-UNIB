@@ -39,7 +39,7 @@ Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Uni
 
 ### 🔍 Halaman Pencarian Rute
 
-![GUI Main Window](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Main%20window.png?raw=true)
+![GUI Main Window](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/7ad5ea0dc743cd1edcc94af5f3fbaaad41d9f8a9/Image%20Sample/Main%20Window.png)
 
 ### 📊 Hasil Analisis Algoritma
 
