@@ -43,7 +43,13 @@ Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan 
 
 ### 📊 Hasil Analisis Algoritma
 
-![GUI Analysis]()
+![GUI Analysis](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/5589d632bb7bee1cdf54d625242dfbe201c2a890/Image%20Sample/Analis%20window.png)
+
+---
+
+### 📊 Visualisasi Map dengan OpenStreetMap
+
+![GUI Analysis](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/5589d632bb7bee1cdf54d625242dfbe201c2a890/Image%20Sample/Map%20Screen.png)
 
 ---
 
