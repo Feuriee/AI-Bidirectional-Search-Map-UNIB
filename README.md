@@ -64,7 +64,7 @@ cd UNIB-RouteFinder
 
 ### 2. Install Dependencies (opsional)
 ```bash
-pip install matplotlib psutil
+pip install tk openrouteservice folium networkx
 ```
 
 ### 3. Jalankan Aplikasi
