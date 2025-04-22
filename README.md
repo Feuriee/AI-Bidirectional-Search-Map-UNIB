@@ -1,6 +1,6 @@
 # 🚀 Search Map UNIB menggunakan Bidirectional Search
 
-Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Universitas Bengkulu** menggunakan algoritma **Bidirectional Search**, dilengkapi fitur visualisasi rute dan analisis performa algoritma.
+Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan untuk mencari dan menganalisis rute terbaik antar lokasi di dalam kampus Universitas Bengkulu (UNIB). Sistem ini menggunakan algoritma **Bidirectional Search (BDS)** dan integrasi API **OpenRouteService (ORS)** untuk menghitung serta memvisualisasikan rute.
 
 ---
 
@@ -43,7 +43,7 @@ Aplikasi GUI interaktif untuk mencari rute tercepat antar lokasi di **Kampus Uni
 
 ### 📊 Hasil Analisis Algoritma
 
-![GUI Analysis](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/d6bb9666c254c529cdc854491ae6789c2428124a/Image%20Sample/Analis%20window.png?raw=true)
+![GUI Analysis]()
 
 ---
 
@@ -73,3 +73,4 @@ python main.py
 - Visualisasi jalur kampus
 - Analisis performa algoritma: waktu, memori, kompleksitas
 - Antarmuka GUI berbasis Tkinter
+- **OpenRouteService (ORS)**:
