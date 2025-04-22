@@ -475,7 +475,7 @@ Aplikasi ini menggunakan kombinasi teori graf, perhitungan geografis, dan model 
 ### Kesimpulan
 ***Berdasarkan hasil percobaan yang dilakukan terhadap algoritma pencarian rute Bidirectional Search, diperoleh beberapa kesimpulan sebagai berikut:***
 1. Pengaruh Jarak terhadap Kompleksitas Waktu
-    - Terdapat peningkatan time complexity seiring bertambahnya jarak yang ditempuh. Meskipun fluktuatif, tren umumnya menunjukkan bahwa semakin jauh jarak tempuh, maka waktu eksekusi algoritma juga cenderung meningkat. Hal         ini disebabkan oleh bertambahnya ruang pencarian yang harus dieksplorasi oleh algoritma.
+    - Terdapat peningkatan time complexity seiring bertambahnya jarak yang ditempuh. Meskipun fluktuatif, hal ini disebabkan oleh bertambahnya ruang pencarian yang harus dieksplorasi oleh algoritma.
 2. Pengaruh Jumlah Node terhadap Kompleksitas Waktu
     - Jumlah simpul (nodes) yang dilalui berbanding lurus dengan time complexity. Saat jumlah node meningkat, waktu komputasi juga meningkat secara bertahap.
 3. Pengaruh Jarak terhadap Alokasi Memori
