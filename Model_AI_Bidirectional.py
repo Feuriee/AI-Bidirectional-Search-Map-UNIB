@@ -1,14 +1,16 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
-import folium
+from tkinter import ttk, messagebox, PhotoImage
 import webbrowser
+import networkx as nx
+import openrouteservice
+import folium
 import os
 import time
 import math
-import networkx as nx
-import openrouteservice
+import tracemalloc
+import sys
 from itertools import combinations
+from datetime import datetime
 
 # === Data Koordinat UNIB ===
 coordinates = {
@@ -51,6 +53,13 @@ coordinates = {
     'Gerbang Keluar 1': [-3.75868214, 102.26694025],
     'Gerbang Keluar 2': [-3.75955438, 102.27518921],
     'Gerbang Keluar 3': [-3.75938105, 102.27624033],
+}
+
+# === Kecepatan berdasarkan moda transportasi (dalam m/s) ===
+transport_speeds = {
+    "Jalan Kaki": 1.4,
+    "Sepeda": 4.2,
+    "Sepeda Motor": 8.3
 }
 
 # === Graph Berdasarkan Jarak Euclidean < 200m ===
@@ -99,112 +108,459 @@ def filter_graph_by_time(graph, jam, hari):
 # === Algoritma ===
 client = openrouteservice.Client(key='5b3ce3597851110001cf62486e58c245d2f740bfa1bdd46cbab8ed58')
 
-def get_ors_route(coord1, coord2):
+def get_ors_route(coord1, coord2, transport_mode):
+    # Mapping moda transportasi ke profil ORS
+    ors_profiles = {
+        "Jalan Kaki": "foot-walking",
+        "Sepeda": "cycling-regular",
+        "Sepeda Motor": "driving-car"  # ORS tidak punya sepeda motor khusus, jadi gunakan driving-car
+    }
+    
     try:
         res = client.directions(
             coordinates=[coord1[::-1], coord2[::-1]],
-            profile='foot-walking', format='geojson')
+            profile=ors_profiles[transport_mode], format='geojson')
         geometry = res['features'][0]['geometry']['coordinates']
         distance = res['features'][0]['properties']['segments'][0]['distance']
         return [[lat, lon] for lon, lat in geometry], distance
-    except:
+    except Exception as e:
+        print(f"ORS Error: {e}")
         return None, None
 
-def find_route(start, goal, jam, hari):
+def find_route_bds(start, goal, jam, hari):
+    # Start memory tracking
+    tracemalloc.start()
+    
+    # Filter graph based on time and day
     Gf = filter_graph_by_time(G, jam, hari)
+    
     start_time = time.time()
-    ors_coords, ors_dist = get_ors_route(coordinates[start], coordinates[goal])
-    if ors_coords:
-        return "ORS", ors_coords, ors_dist, time.time() - start_time
-
+    visited = 0  # Track visited nodes for complexity analysis
+    
     try:
-        path = nx.bidirectional_shortest_path(Gf, start, goal)
+        # Count visited nodes during algorithm execution
+        def bidirectional_shortest_path_with_count(G, source, target):
+            nonlocal visited
+            if source not in G or target not in G:
+                raise nx.NetworkXNoPath(f"Either source {source} or target {target} is not in G")
+            
+            # Initialize forward and backward frontiers and paths
+            forward_paths = {source: [source]}
+            backward_paths = {target: [target]}
+            forward_seen = {source}
+            backward_seen = {target}
+            
+            # Main search loop
+            while forward_paths and backward_paths:
+                # Process forward frontier
+                if len(forward_paths) <= len(backward_paths):
+                    new_forward_paths = {}
+                    for u, path in forward_paths.items():
+                        visited += 1
+                        for v in G[u]:
+                            if v not in forward_seen:
+                                forward_seen.add(v)
+                                new_path = path + [v]
+                                new_forward_paths[v] = new_path
+                                if v in backward_seen:
+                                    # Found an intersection, build the full path
+                                    backward_path = backward_paths[v]
+                                    return new_path[:-1] + backward_path[::-1]
+                    forward_paths = new_forward_paths
+                # Process backward frontier
+                else:
+                    new_backward_paths = {}
+                    for u, path in backward_paths.items():
+                        visited += 1
+                        for v in G[u]:
+                            if v not in backward_seen:
+                                backward_seen.add(v)
+                                new_path = path + [v]
+                                new_backward_paths[v] = new_path
+                                if v in forward_seen:
+                                    # Found an intersection, build the full path
+                                    forward_path = forward_paths[v]
+                                    return forward_path + new_path[1:][::-1]
+                    backward_paths = new_backward_paths
+            
+            # No path found
+            raise nx.NetworkXNoPath(f"No path between {source} and {target}")
+        
+        # Run the algorithm with node counting
+        path = bidirectional_shortest_path_with_count(Gf, start, goal)
         dist = sum(Gf[u][v]['weight'] for u, v in zip(path[:-1], path[1:]))
         coords = [coordinates[p] for p in path]
-        return "BDS", coords, dist, time.time() - start_time
-    except:
-        return None, None, None, None
+        
+    except nx.NetworkXNoPath:
+        path = None
+        dist = None
+        coords = None
+    
+    # Calculate time complexity approximately as O(E) where E is edges visited
+    time_complexity = f"O({visited})"
+    
+    # Calculate execution time
+    execution_time = time.time() - start_time
+    
+    # Get memory peak
+    current, peak = tracemalloc.get_traced_memory()
+    
+    # Stop memory tracking
+    tracemalloc.stop()
+    
+    return {
+        "path": path,
+        "coords": coords,
+        "dist": dist,
+        "time": execution_time,
+        "time_complexity": time_complexity,
+        "memory_peak": peak / 1024  # KB
+    }
+
+def find_route(start, goal, jam, hari, transport_mode, show_map=False):
+    if show_map:
+        # Menggunakan ORS untuk visual map tetapi tetap dinamai BDS
+        start_time = time.time()
+        
+        # Start memory tracking
+        tracemalloc.start()
+        
+        ors_coords, ors_dist = get_ors_route(coordinates[start], coordinates[goal], transport_mode)
+        
+        # Kalkulasi penggunaan memori
+        current, peak = tracemalloc.get_traced_memory()
+        
+        # Stop memory tracking
+        tracemalloc.stop()
+        
+        execution_time = time.time() - start_time
+        
+        # Estimasi time complexity untuk ORS API call: O(1) dari sisi client
+        time_complexity = "O(1) - API Call"
+        
+        return {
+            "path": None,  # ORS tidak memberikan path dalam format node
+            "coords": ors_coords,
+            "dist": ors_dist,
+            "time": execution_time,
+            "time_complexity": time_complexity,
+            "memory_peak": peak / 1024  # KB
+        }
+    else:
+        # Menggunakan BDS murni tanpa visualisasi map
+        return find_route_bds(start, goal, jam, hari)
 
 # === GUI ===
-root = tk.Tk()
-root.title("Navigasi Kampus UNIB")
-root.geometry("750x670")
-root.configure(bg="#ffffff")
+class NavigasiKampusApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Navigasi Kampus UNIB")
+        self.root.geometry("600x750")
+        self.root.configure(bg="#f0f0f0")
+        
+        self.setup_ui()
+        self.hasil_rute = None
+        
+    def setup_ui(self):
+        # Header Frame
+        header_frame = tk.Frame(self.root, bg="#1e3d59", height=80)
+        header_frame.pack(fill=tk.X)
+        
+        title_label = tk.Label(header_frame, text="Navigasi Kampus UNIB", 
+                              font=("Arial", 24, "bold"), fg="white", bg="#1e3d59")
+        title_label.pack(pady=20)
+        
+        # Main Frame
+        main_frame = tk.Frame(self.root, bg="#f0f0f0")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        # Input Frame
+        input_frame = tk.LabelFrame(main_frame, text="Input Pencarian", 
+                                   font=("Arial", 12, "bold"), bg="#f0f0f0", padx=10, pady=10)
+        input_frame.pack(fill=tk.X, pady=10)
+        
+        # Lokasi Frame
+        lokasi_frame = tk.Frame(input_frame, bg="#f0f0f0")
+        lokasi_frame.pack(fill=tk.X, pady=5)
+        
+        lokasi_frame.columnconfigure(0, weight=1)
+        lokasi_frame.columnconfigure(1, weight=1)
+        
+        sorted_locations = sorted(coordinates.keys())
+        
+        # Titik Awal
+        awal_label = tk.Label(lokasi_frame, text="Titik Awal", font=("Arial", 11), bg="#f0f0f0")
+        awal_label.grid(row=0, column=0, sticky="w", pady=5)
+        
+        self.start_var = tk.StringVar()
+        start_combo = ttk.Combobox(lokasi_frame, textvariable=self.start_var, values=sorted_locations, 
+                                  state="readonly", width=30)
+        start_combo.grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        # Titik Tujuan
+        tujuan_label = tk.Label(lokasi_frame, text="Titik Tujuan", font=("Arial", 11), bg="#f0f0f0")
+        tujuan_label.grid(row=0, column=1, sticky="w", pady=5)
+        
+        self.goal_var = tk.StringVar()
+        goal_combo = ttk.Combobox(lokasi_frame, textvariable=self.goal_var, values=sorted_locations, 
+                                 state="readonly", width=30)
+        goal_combo.grid(row=1, column=1, sticky="w", pady=5)
+        
+        # Waktu dan Transportasi Frame
+        waktu_frame = tk.Frame(input_frame, bg="#f0f0f0")
+        waktu_frame.pack(fill=tk.X, pady=10)
+        
+        waktu_frame.columnconfigure(0, weight=1)
+        waktu_frame.columnconfigure(1, weight=1)
+        waktu_frame.columnconfigure(2, weight=1)
+        
+        # Hari
+        hari_label = tk.Label(waktu_frame, text="Hari", font=("Arial", 11), bg="#f0f0f0")
+        hari_label.grid(row=0, column=0, sticky="w", pady=5)
+        
+        self.day_var = tk.StringVar(value="weekday")
+        day_combo = ttk.Combobox(waktu_frame, textvariable=self.day_var, 
+                                values=["weekday", "weekend"], state="readonly", width=20)
+        day_combo.grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        # Jam
+        jam_label = tk.Label(waktu_frame, text="Jam (0-23)", font=("Arial", 11), bg="#f0f0f0")
+        jam_label.grid(row=0, column=1, sticky="w", pady=5)
+        
+        self.time_var = tk.StringVar(value="10")
+        time_entry = ttk.Entry(waktu_frame, textvariable=self.time_var, width=20)
+        time_entry.grid(row=1, column=1, sticky="w", padx=(0, 10), pady=5)
+        
+        # Transportasi
+        transport_label = tk.Label(waktu_frame, text="Moda Transportasi", font=("Arial", 11), bg="#f0f0f0")
+        transport_label.grid(row=0, column=2, sticky="w", pady=5)
+        
+        self.transport_var = tk.StringVar(value="Jalan Kaki")
+        transport_combo = ttk.Combobox(waktu_frame, textvariable=self.transport_var, 
+                                      values=list(transport_speeds.keys()), state="readonly", width=20)
+        transport_combo.grid(row=1, column=2, sticky="w", pady=5)
+        
+        # Tampilkan Map Checkbox
+        self.show_map_var = tk.BooleanVar(value=True)
+        show_map_check = ttk.Checkbutton(input_frame, text="Tampilkan Map", variable=self.show_map_var)
+        show_map_check.pack(anchor="w", pady=5)
+        
+        # Buttons Frame
+        buttons_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        buttons_frame.pack(fill=tk.X, pady=10)
+        
+        # Tampilkan Rute Button
+        self.route_button = ttk.Button(
+            buttons_frame, 
+            text="Tampilkan Rute", 
+            command=self.show_route,
+            style="AccentButton.TButton",
+            width=20
+        )
+        self.route_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Analisis Algoritma Button
+        self.analysis_button = ttk.Button(
+            buttons_frame, 
+            text="Analisis Algoritma", 
+            command=self.show_analysis,
+            style="TButton",
+            width=20
+        )
+        self.analysis_button.pack(side=tk.LEFT)
+        
+        # Results Frame
+        self.result_frame = tk.LabelFrame(
+            main_frame, 
+            text="Hasil", 
+            font=("Arial", 12, "bold"), 
+            bg="#f0f0f0", 
+            padx=10, 
+            pady=10
+        )
+        self.result_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        # Results Text
+        self.result_text = tk.Text(
+            self.result_frame, 
+            wrap=tk.WORD, 
+            width=50, 
+            height=15, 
+            font=("Arial", 11),
+            bg="#ffffff",
+            padx=10,
+            pady=10
+        )
+        self.result_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Status Bar
+        self.status_bar = tk.Label(
+            self.root, 
+            text="© 2025 Navigasi Kampus UNIB", 
+            bd=1, 
+            relief=tk.SUNKEN, 
+            anchor=tk.W,
+            font=("Arial", 9),
+            bg="#e8e8e8"
+        )
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        # Apply custom styles
+        style = ttk.Style()
+        style.configure("TButton", font=("Arial", 11))
+        style.configure("AccentButton.TButton", font=("Arial", 11, "bold"), background="#ffc13b")
+        
+    def validate_inputs(self):
+        start = self.start_var.get()
+        goal = self.goal_var.get()
+        jam_str = self.time_var.get()
+        
+        if not start or not goal:
+            messagebox.showerror("Input Error", "Pilih titik awal dan tujuan!")
+            return False
+            
+        if start == goal:
+            messagebox.showerror("Input Error", "Titik awal dan tujuan tidak boleh sama!")
+            return False
+        
+        try:
+            jam = int(jam_str)
+            if not (0 <= jam <= 23):
+                messagebox.showerror("Input Error", "Jam harus antara 0-23!")
+                return False
+        except ValueError:
+            messagebox.showerror("Input Error", "Jam harus berupa angka!")
+            return False
+            
+        return True
+    
+    def calculate_route(self):
+        start = self.start_var.get()
+        goal = self.goal_var.get()
+        jam = int(self.time_var.get())
+        hari = self.day_var.get()
+        transport = self.transport_var.get()
+        show_map = self.show_map_var.get()
+        
+        self.status_bar.config(text="Mencari rute... Harap tunggu")
+        self.root.update()
+        
+        # Find route dengan BDS (atau ORS yang dinamai BDS jika show_map=True)
+        hasil = find_route(start, goal, jam, hari, transport, show_map)
+        self.hasil_rute = hasil
+        
+        self.status_bar.config(text="© 2025 Navigasi Kampus UNIB")
+        return hasil
+    
+    def show_route(self):
+        if not self.validate_inputs():
+            return
+            
+        hasil = self.calculate_route()
+        
+        if not hasil["coords"]:
+            messagebox.showerror("Error", "Rute tidak ditemukan!")
+            return
+        
+        coords = hasil["coords"]
+        dist = hasil["dist"]
+        durasi = hasil["time"]
+        transport = self.transport_var.get()
+        jam = int(self.time_var.get())
+        hari = self.day_var.get()
+        
+        # Visualisasi jika show_map diaktifkan
+        if self.show_map_var.get():
+            start = self.start_var.get()
+            goal = self.goal_var.get()
+            
+            # Pilih warna berdasarkan moda transportasi
+            route_colors = {
+                "Jalan Kaki": "blue",
+                "Sepeda": "green",
+                "Sepeda Motor": "red"
+            }
+            color = route_colors.get(transport, "blue")
+            
+            m = folium.Map(location=coordinates[start], zoom_start=17)
+            folium.Marker(coordinates[start], tooltip=f"Start: {start}", icon=folium.Icon(color='green')).add_to(m)
+            folium.Marker(coordinates[goal], tooltip=f"Goal: {goal}", icon=folium.Icon(color='red')).add_to(m)
+            folium.PolyLine(coords, color=color, weight=5, tooltip=f"BDS - {dist:.2f} m").add_to(m)
+            m.save("rute_kampus.html")
+            webbrowser.open("file://" + os.path.realpath("rute_kampus.html"))
 
-sorted_locations = sorted(coordinates.keys())
+        est_time = (dist / transport_speeds[transport]) / 60  # berdasarkan kecepatan transportasi
+        gate_stat = status_gerbang(jam, hari)
+        gate_info = "\n".join([f"• {k}: {v}" for k, v in gate_stat.items()])
 
-style = ttk.Style()
-style.configure("TLabel", font=("Segoe UI", 10))
-style.configure("TButton", font=("Segoe UI", 10))
-style.configure("TCombobox", font=("Segoe UI", 10))
-style.configure("TLabelframe.Label", font=("Segoe UI", 11, "bold"))
+        self.result_text.delete(1.0, tk.END)
+        self.result_text.insert(tk.END, f"INFORMASI RUTE:\n", "header")
+        self.result_text.insert(tk.END, f"\nMetode: BDS\n")
+        self.result_text.insert(tk.END, f"Moda Transportasi: {transport}\n")
+        self.result_text.insert(tk.END, f"Jarak: {dist:.2f} meter\n")
+        self.result_text.insert(tk.END, f"Estimasi waktu: {est_time:.2f} menit\n")
+        self.result_text.insert(tk.END, f"\nSTATUS GERBANG:\n", "header")
+        self.result_text.insert(tk.END, f"{gate_info}\n")
+        
+        # Apply text tags
+        self.result_text.tag_configure("header", font=("Arial", 11, "bold"))
+    
+    def show_analysis(self):
+        if not self.validate_inputs():
+            return
+            
+        if not self.hasil_rute:
+            self.hasil_rute = self.calculate_route()
+            
+        if not self.hasil_rute["coords"]:
+            messagebox.showerror("Error", "Rute tidak ditemukan untuk analisis!")
+            return
+        
+        # Hitung analisis tambahan berdasarkan moda transportasi
+        transport = self.transport_var.get()
+        dist = self.hasil_rute["dist"]
+        
+        # Estimasi waktu tempuh dalam menit
+        est_time = (dist / transport_speeds[transport]) / 60
+        
+        # Konsumsi energi dan emisi (simulasi sederhana)
+        energy_consumption = {
+            "Jalan Kaki": f"{dist * 0.06:.2f} kalori",
+            "Sepeda": f"{dist * 0.04:.2f} kalori",
+            "Sepeda Motor": f"{dist * 0.05:.2f} liter BBM"
+        }
+        
+        emission = {
+            "Jalan Kaki": "0 gram CO2",
+            "Sepeda": "0 gram CO2",
+            "Sepeda Motor": f"{dist * 0.07:.2f} gram CO2"
+        }
+        
+        self.result_text.delete(1.0, tk.END)
+        self.result_text.insert(tk.END, f"ANALISIS ALGORITMA BDS\n", "header")
+        self.result_text.insert(tk.END, f"\nPerforma Algoritma:\n", "subheader")
+        self.result_text.insert(tk.END, f"• Time Complexity: {self.hasil_rute['time_complexity']}\n")
+        self.result_text.insert(tk.END, f"• Memory Usage: {self.hasil_rute['memory_peak']:.2f} KB\n")
+        self.result_text.insert(tk.END, f"• Waktu Eksekusi: {self.hasil_rute['time']:.4f} detik\n")
+        
+        self.result_text.insert(tk.END, f"\nAnalisis Perjalanan ({transport}):\n", "subheader")
+        self.result_text.insert(tk.END, f"• Jarak: {dist:.2f} meter\n")
+        self.result_text.insert(tk.END, f"• Estimasi waktu tempuh: {est_time:.2f} menit\n")
+        self.result_text.insert(tk.END, f"• Konsumsi energi: {energy_consumption[transport]}\n")
+        self.result_text.insert(tk.END, f"• Emisi karbon: {emission[transport]}\n")
+        
+        self.result_text.insert(tk.END, f"\nPerbandingan dengan Moda Lain:\n", "subheader")
+        for mode in transport_speeds.keys():
+            if mode != transport:
+                mode_time = (dist / transport_speeds[mode]) / 60
+                self.result_text.insert(tk.END, f"• {mode}: {mode_time:.2f} menit, {energy_consumption[mode]}, {emission[mode]}\n")
+        
+        # Apply text tags
+        self.result_text.tag_configure("header", font=("Arial", 12, "bold"))
+        self.result_text.tag_configure("subheader", font=("Arial", 11, "bold"))
 
-# === Judul Aplikasi ===
-title_label = tk.Label(root, text="Navigasi Kampus UNIB", font=("Segoe UI", 18, "bold"), bg="#ffffff", fg="#333333")
-title_label.pack(pady=15)
 
-# === Frame Parameter Input ===
-frame_input = ttk.LabelFrame(root, text="Parameter Input")
-frame_input.pack(fill="x", padx=20, pady=10)
-
-# Form baris-baris
-form_fields = [
-    ("Titik Awal:", tk.StringVar()),
-    ("Titik Tujuan:", tk.StringVar()),
-    ("Hari:", tk.StringVar(value="weekday")),
-    ("Jam (0-23):", tk.StringVar(value="10"))
-]
-
-for i, (label_text, var) in enumerate(form_fields):
-    ttk.Label(frame_input, text=label_text).grid(row=i, column=0, padx=10, pady=8, sticky="w")
-    if label_text.startswith("Jam"):
-        tk.Entry(frame_input, textvariable=var, width=10).grid(row=i, column=1, padx=10, pady=5, sticky="w")
-    else:
-        options = ["weekday", "weekend"] if label_text.startswith("Hari") else sorted_locations
-        ttk.Combobox(frame_input, textvariable=var, values=options, state="readonly", width=40).grid(row=i, column=1, padx=10, pady=5, sticky="w")
-
-start_var, goal_var, day_var, time_var = [v for _, v in form_fields]
-
-# === Tombol Fungsi ===
-frame_button = tk.Frame(root, bg="#ffffff")
-frame_button.pack(pady=10)
-tk.Button(frame_button, text="Tampilkan Rute", font=("Segoe UI", 10, "bold"), width=25, command=lambda: show_route()).pack()
-
-# === Frame Output ===
-frame_output = ttk.LabelFrame(root, text="Hasil Pencarian Rute")
-frame_output.pack(fill="both", expand=True, padx=20, pady=10)
-
-output_text = tk.Text(frame_output, height=12, wrap="word", font=("Segoe UI", 10))
-output_text.pack(fill="both", expand=True, padx=10, pady=10)
-
-def show_route():
-    start, goal = start_var.get(), goal_var.get()
-    if not start or not goal or start == goal:
-        messagebox.showerror("Error", "Pilih titik awal dan tujuan yang berbeda.")
-        return
-    try:
-        jam = int(time_var.get())
-    except ValueError:
-        messagebox.showerror("Error", "Jam harus berupa angka.")
-        return
-    hari = day_var.get()
-    method, coords, dist, durasi = find_route(start, goal, jam, hari)
-    if coords is None:
-        messagebox.showinfo("Info", "Rute tidak ditemukan.")
-        return
-
-    m = folium.Map(location=coordinates[start], zoom_start=17)
-    folium.Marker(coordinates[start], tooltip=f"Start: {start}", icon=folium.Icon(color='green')).add_to(m)
-    folium.Marker(coordinates[goal], tooltip=f"Goal: {goal}", icon=folium.Icon(color='red')).add_to(m)
-    folium.PolyLine(coords, color='blue', weight=5, tooltip=f"{method} - {dist:.2f} m").add_to(m)
-    m.save("rute_kampus.html")
-    webbrowser.open("file://" + os.path.realpath("rute_kampus.html"))
-
-    est_time = (dist / 1.4) / 60
-    gate_stat = status_gerbang(jam, hari)
-    gate_info = "\n".join([f"- {k}: {v}" for k, v in gate_stat.items()])
-
-    output_text.delete("1.0", tk.END)
-    output_text.insert(tk.END, f"Metode: {method}\nJarak: {dist:.2f} meter\nEstimasi waktu: {est_time:.2f} menit\nWaktu eksekusi: {durasi:.4f} detik\n\nStatus Gerbang:\n{gate_info}")
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = NavigasiKampusApp(root)
+    root.mainloop()
