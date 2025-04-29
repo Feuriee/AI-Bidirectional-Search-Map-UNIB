@@ -39,7 +39,7 @@ Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan 
 
 ### 🔍 Halaman Pencarian Rute
 
-![GUI Main Window]()
+![GUI Main Window](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/main/Image%20Sample/Main%20window.png)
 
 ### 📊 Hasil Analisis Algoritma
 
@@ -55,7 +55,7 @@ Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan 
 
 ### 📊 Visualisasi Map dengan OpenStreetMap
 
-![GUI Map Location](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/5589d632bb7bee1cdf54d625242dfbe201c2a890/Image%20Sample/Map%20Screen.png)
+![GUI Map Location](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/main/Image%20Sample/Map%20Loc.png)
 
 ---
 
