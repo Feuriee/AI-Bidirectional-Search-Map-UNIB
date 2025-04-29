@@ -53,7 +53,7 @@ Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan 
 
 ---
 
-### 📊 Visualisasi Map dengan OpenStreetMap
+### 📊 Visualisasi Map location dengan OpenStreetMap
 
 ![GUI Map Location](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/main/Image%20Sample/Map%20Loc.png)
 
