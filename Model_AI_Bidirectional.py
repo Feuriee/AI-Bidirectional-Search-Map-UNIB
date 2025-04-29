@@ -113,7 +113,7 @@ def get_ors_route(coord1, coord2, transport_mode):
     ors_profiles = {
         "Jalan Kaki": "foot-walking",
         "Sepeda": "cycling-regular",
-        "Sepeda Motor": "driving-car"  # ORS tidak punya sepeda motor khusus, jadi gunakan driving-car
+        "Sepeda Motor": "driving-car"
     }
     
     try:
@@ -135,7 +135,7 @@ def find_route_bds(start, goal, jam, hari):
     Gf = filter_graph_by_time(G, jam, hari)
     
     start_time = time.time()
-    visited = 0  # Track visited nodes for complexity analysis
+    visited = 0 
     
     try:
         # Count visited nodes during algorithm execution
@@ -144,7 +144,6 @@ def find_route_bds(start, goal, jam, hari):
             if source not in G or target not in G:
                 raise nx.NetworkXNoPath(f"Either source {source} or target {target} is not in G")
             
-            # Initialize forward and backward frontiers and paths
             forward_paths = {source: [source]}
             backward_paths = {target: [target]}
             forward_seen = {source}
@@ -152,7 +151,6 @@ def find_route_bds(start, goal, jam, hari):
             
             # Main search loop
             while forward_paths and backward_paths:
-                # Process forward frontier
                 if len(forward_paths) <= len(backward_paths):
                     new_forward_paths = {}
                     for u, path in forward_paths.items():
@@ -163,7 +161,6 @@ def find_route_bds(start, goal, jam, hari):
                                 new_path = path + [v]
                                 new_forward_paths[v] = new_path
                                 if v in backward_seen:
-                                    # Found an intersection, build the full path
                                     backward_path = backward_paths[v]
                                     return new_path[:-1] + backward_path[::-1]
                     forward_paths = new_forward_paths
@@ -178,7 +175,6 @@ def find_route_bds(start, goal, jam, hari):
                                 new_path = path + [v]
                                 new_backward_paths[v] = new_path
                                 if v in forward_seen:
-                                    # Found an intersection, build the full path
                                     forward_path = forward_paths[v]
                                     return forward_path + new_path[1:][::-1]
                     backward_paths = new_backward_paths
@@ -219,7 +215,6 @@ def find_route_bds(start, goal, jam, hari):
 
 def find_route(start, goal, jam, hari, transport_mode, show_map=False):
     if show_map:
-        # Menggunakan ORS untuk visual map tetapi tetap dinamai BDS
         start_time = time.time()
         
         # Start memory tracking
@@ -239,7 +234,7 @@ def find_route(start, goal, jam, hari, transport_mode, show_map=False):
         time_complexity = "O(1) - API Call"
         
         return {
-            "path": None,  # ORS tidak memberikan path dalam format node
+            "path": None, 
             "coords": ors_coords,
             "dist": ors_dist,
             "time": execution_time,
@@ -546,7 +541,7 @@ class NavigasiKampusApp:
             webbrowser.open("file://" + os.path.realpath("rute_kampus.html"))
 
         # Menampilkan informasi rute pada text widget
-        est_time = (dist / transport_speeds[transport]) / 60  # berdasarkan kecepatan transportasi
+        est_time = (dist / transport_speeds[transport]) / 60
         gate_stat = status_gerbang(jam, hari)
         gate_info = "\n".join([f"• {k}: {v}" for k, v in gate_stat.items()])
 
