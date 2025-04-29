@@ -53,6 +53,12 @@ Aplikasi ini adalah alat bantu interaktif berbasis GUI (Tkinter) yang digunakan 
 
 ---
 
+### 📊 Visualisasi Map dengan OpenStreetMap
+
+![GUI Map Location](https://github.com/Feuriee/AI-Bidirectional-Search-Map-UNIB/blob/5589d632bb7bee1cdf54d625242dfbe201c2a890/Image%20Sample/Map%20Screen.png)
+
+---
+
 ## ⚙️ Cara Menjalankan Aplikasi
 
 ### 1. Clone Repository
