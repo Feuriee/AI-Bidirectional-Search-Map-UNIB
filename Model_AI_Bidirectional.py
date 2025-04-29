@@ -340,10 +340,27 @@ class NavigasiKampusApp:
                                       values=list(transport_speeds.keys()), state="readonly", width=20)
         transport_combo.grid(row=1, column=2, sticky="w", pady=5)
         
+        # Display Options Frame
+        display_frame = tk.LabelFrame(input_frame, text="Opsi Tampilan", 
+                                     font=("Arial", 11, "bold"), bg="#f0f0f0", padx=10, pady=10)
+        display_frame.pack(fill=tk.X, pady=10)
+        
         # Tampilkan Map Checkbox
         self.show_map_var = tk.BooleanVar(value=True)
-        show_map_check = ttk.Checkbutton(input_frame, text="Tampilkan Map", variable=self.show_map_var)
-        show_map_check.pack(anchor="w", pady=5)
+        show_map_check = ttk.Checkbutton(display_frame, text="Tampilkan Map", variable=self.show_map_var)
+        show_map_check.grid(row=0, column=0, sticky="w", pady=5)
+        
+        # Tampilkan Semua Titik Checkbox
+        self.show_all_points_var = tk.BooleanVar(value=False)
+        show_all_points_check = ttk.Checkbutton(display_frame, text="Tampilkan Semua Titik", 
+                                               variable=self.show_all_points_var)
+        show_all_points_check.grid(row=0, column=1, sticky="w", pady=5, padx=(20, 0))
+        
+        # Tampilkan Titik Rute Checkbox
+        self.show_route_points_var = tk.BooleanVar(value=False)
+        show_route_points_check = ttk.Checkbutton(display_frame, text="Tampilkan Titik Rute", 
+                                                 variable=self.show_route_points_var)
+        show_route_points_check.grid(row=1, column=0, sticky="w", pady=5)
         
         # Buttons Frame
         buttons_frame = tk.Frame(main_frame, bg="#f0f0f0")
@@ -367,7 +384,17 @@ class NavigasiKampusApp:
             style="TButton",
             width=20
         )
-        self.analysis_button.pack(side=tk.LEFT)
+        self.analysis_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Tampilkan Semua Lokasi
+        self.show_all_button = ttk.Button(
+            buttons_frame, 
+            text="Lihat Semua Lokasi", 
+            command=self.show_all_locations,
+            style="TButton",
+            width=20
+        )
+        self.show_all_button.pack(side=tk.LEFT)
         
         # Results Frame
         self.result_frame = tk.LabelFrame(
@@ -464,7 +491,6 @@ class NavigasiKampusApp:
         
         coords = hasil["coords"]
         dist = hasil["dist"]
-        durasi = hasil["time"]
         transport = self.transport_var.get()
         jam = int(self.time_var.get())
         hari = self.day_var.get()
@@ -482,13 +508,44 @@ class NavigasiKampusApp:
             }
             color = route_colors.get(transport, "blue")
             
-            m = folium.Map(location=coordinates[start], zoom_start=17)
-            folium.Marker(coordinates[start], tooltip=f"Start: {start}", icon=folium.Icon(color='green')).add_to(m)
-            folium.Marker(coordinates[goal], tooltip=f"Goal: {goal}", icon=folium.Icon(color='red')).add_to(m)
-            folium.PolyLine(coords, color=color, weight=5, tooltip=f"BDS - {dist:.2f} m").add_to(m)
+            m = folium.Map(location=coordinates[start], zoom_start=16)
+            
+            # Tambahkan marker untuk titik awal dan tujuan
+            folium.Marker(coordinates[start], tooltip=f"Start: {start}", 
+                         icon=folium.Icon(color='green')).add_to(m)
+            folium.Marker(coordinates[goal], tooltip=f"Goal: {goal}", 
+                         icon=folium.Icon(color='red')).add_to(m)
+            
+            # Tambahkan polyline untuk rute
+            folium.PolyLine(coords, color=color, weight=5, 
+                           tooltip=f"BDS - {dist:.2f} m").add_to(m)
+            
+            # Jika opsi tampilkan semua titik aktif
+            if self.show_all_points_var.get():
+                for name, coord in coordinates.items():
+                    if name != start and name != goal:
+                        folium.Marker(
+                            coord, 
+                            tooltip=name,
+                            icon=folium.Icon(color='gray', icon='info-sign', prefix='fa')
+                        ).add_to(m)
+            
+            # Jika opsi tampilkan titik rute aktif dan ada path
+            if self.show_route_points_var.get() and hasil["path"]:
+                path = hasil["path"]
+                # Tampilkan semua titik dalam path kecuali awal dan akhir (sudah ditampilkan)
+                for i, point_name in enumerate(path):
+                    if i > 0 and i < len(path) - 1:  # Skip awal dan akhir
+                        folium.Marker(
+                            coordinates[point_name], 
+                            tooltip=f"Via: {point_name}",
+                            icon=folium.Icon(color='blue', icon='info-sign', prefix='fa')
+                        ).add_to(m)
+            
             m.save("rute_kampus.html")
             webbrowser.open("file://" + os.path.realpath("rute_kampus.html"))
 
+        # Menampilkan informasi rute pada text widget
         est_time = (dist / transport_speeds[transport]) / 60  # berdasarkan kecepatan transportasi
         gate_stat = status_gerbang(jam, hari)
         gate_info = "\n".join([f"• {k}: {v}" for k, v in gate_stat.items()])
@@ -499,6 +556,18 @@ class NavigasiKampusApp:
         self.result_text.insert(tk.END, f"Moda Transportasi: {transport}\n")
         self.result_text.insert(tk.END, f"Jarak: {dist:.2f} meter\n")
         self.result_text.insert(tk.END, f"Estimasi waktu: {est_time:.2f} menit\n")
+        
+        # Menampilkan path jika ada
+        if hasil["path"]:
+            self.result_text.insert(tk.END, f"\nRUTE DETAIL:\n", "header")
+            for i, point in enumerate(hasil["path"]):
+                if i < len(hasil["path"]) - 1:
+                    next_point = hasil["path"][i+1]
+                    segment_dist = haversine(coordinates[point], coordinates[next_point])
+                    self.result_text.insert(tk.END, f"{i+1}. {point} → {next_point} ({segment_dist:.2f} m)\n")
+                else:
+                    self.result_text.insert(tk.END, f"{i+1}. {point} (Tujuan)\n")
+        
         self.result_text.insert(tk.END, f"\nSTATUS GERBANG:\n", "header")
         self.result_text.insert(tk.END, f"{gate_info}\n")
         
@@ -537,29 +606,67 @@ class NavigasiKampusApp:
         }
         
         self.result_text.delete(1.0, tk.END)
-        self.result_text.insert(tk.END, f"ANALISIS ALGORITMA BDS\n", "header")
-        self.result_text.insert(tk.END, f"\nPerforma Algoritma:\n", "subheader")
-        self.result_text.insert(tk.END, f"• Time Complexity: {self.hasil_rute['time_complexity']}\n")
-        self.result_text.insert(tk.END, f"• Memory Usage: {self.hasil_rute['memory_peak']:.2f} KB\n")
-        self.result_text.insert(tk.END, f"• Waktu Eksekusi: {self.hasil_rute['time']:.4f} detik\n")
+        self.result_text.insert(tk.END, f"ANALISIS ALGORITMA:\n", "header")
+        self.result_text.insert(tk.END, f"\nModa Transportasi: {transport}\n")
+        self.result_text.insert(tk.END, f"Jarak: {dist:.2f} meter\n")
+        self.result_text.insert(tk.END, f"Estimasi waktu tempuh: {est_time:.2f} menit\n")
+        self.result_text.insert(tk.END, f"Konsumsi energi: {energy_consumption[transport]}\n")
+        self.result_text.insert(tk.END, f"Emisi karbon: {emission[transport]}\n\n")
         
-        self.result_text.insert(tk.END, f"\nAnalisis Perjalanan ({transport}):\n", "subheader")
-        self.result_text.insert(tk.END, f"• Jarak: {dist:.2f} meter\n")
-        self.result_text.insert(tk.END, f"• Estimasi waktu tempuh: {est_time:.2f} menit\n")
-        self.result_text.insert(tk.END, f"• Konsumsi energi: {energy_consumption[transport]}\n")
-        self.result_text.insert(tk.END, f"• Emisi karbon: {emission[transport]}\n")
+        self.result_text.insert(tk.END, f"KOMPLEKSITAS ALGORITMA:\n", "header")
+        self.result_text.insert(tk.END, f"Time Complexity: {self.hasil_rute['time_complexity']}\n")
+        self.result_text.insert(tk.END, f"Memory Peak: {self.hasil_rute['memory_peak']:.2f} KB\n")
+        self.result_text.insert(tk.END, f"Execution Time: {self.hasil_rute['time'] * 1000:.2f} ms\n\n")
         
-        self.result_text.insert(tk.END, f"\nPerbandingan dengan Moda Lain:\n", "subheader")
-        for mode in transport_speeds.keys():
-            if mode != transport:
-                mode_time = (dist / transport_speeds[mode]) / 60
-                self.result_text.insert(tk.END, f"• {mode}: {mode_time:.2f} menit, {energy_consumption[mode]}, {emission[mode]}\n")
+        self.result_text.insert(tk.END, f"PERBANDINGAN ALGORITMA:\n", "header")
+        self.result_text.insert(tk.END, f"BDS vs Dijkstra:\n")
+        self.result_text.insert(tk.END, f"• BDS lebih efisien untuk graph berarah non-negatif\n")
+        self.result_text.insert(tk.END, f"• BDS mencari dari dua arah sekaligus\n")
+        self.result_text.insert(tk.END, f"• Jangkauan pencarian lebih sempit\n\n")
+        
+        self.result_text.insert(tk.END, f"BDS vs A*:\n")
+        self.result_text.insert(tk.END, f"• BDS tidak menggunakan heuristik\n")
+        self.result_text.insert(tk.END, f"• A* lebih efisien pada graf tertentu dengan heuristik\n")
+        self.result_text.insert(tk.END, f"• BDS lebih sederhana implementasinya\n")
         
         # Apply text tags
-        self.result_text.tag_configure("header", font=("Arial", 12, "bold"))
-        self.result_text.tag_configure("subheader", font=("Arial", 11, "bold"))
+        self.result_text.tag_configure("header", font=("Arial", 11, "bold"))
 
+    def show_all_locations(self):
+        # Membuat peta dengan semua lokasi
+        center_lat = sum(coord[0] for coord in coordinates.values()) / len(coordinates)
+        center_lon = sum(coord[1] for coord in coordinates.values()) / len(coordinates)
+        
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=16)
+        
+        # Tambahkan semua lokasi
+        for name, coord in coordinates.items():
+            icon_color = 'blue'
+            if "Gerbang" in name:
+                if "Masuk" in name:
+                    icon_color = 'green'
+                else:
+                    icon_color = 'red'
+            
+            folium.Marker(
+                coord, 
+                tooltip=name,
+                icon=folium.Icon(color=icon_color)
+            ).add_to(m)
+        
+        # Tambahkan semua edge dari graph dasar
+        for u, v in G.edges():
+            folium.PolyLine(
+                [coordinates[u], coordinates[v]], 
+                color='gray', 
+                weight=2, 
+                opacity=0.5
+            ).add_to(m)
+        
+        m.save("semua_lokasi.html")
+        webbrowser.open("file://" + os.path.realpath("semua_lokasi.html"))
 
+# === Main ===
 if __name__ == "__main__":
     root = tk.Tk()
     app = NavigasiKampusApp(root)
